@@ -37,6 +37,15 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: ImpressCMS/impresscms
+          
+      - name: Installing PHP...
+        uses: shivammathur/setup-php@2.19.1
+        with:
+          php-version: 8.1
+          extensions: curl, gd, pdo_mysql, json, mbstring, pcre, session
+          ini-values: post_max_size=256M
+          coverage: none
+          tools: composer:v2
 
       - name: Installing ImpressCMS...
         uses: impresscms-dev/install-impresscms-action@v0.1
