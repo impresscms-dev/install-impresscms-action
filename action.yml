@@ -1,0 +1,143 @@
+name: 'Install ImpressCMS'
+description: 'GitHub action to install ImpressCMS'
+
+# https://actions-cool.github.io/github-action-branding/
+branding:
+  icon: cpu
+  color: 'yellow'
+
+inputs:
+  url:
+    description: "Site URL"
+    default: http://localhost
+    required: false
+  database_type:
+    description: "Database type"
+    default: pdo.mysql
+    required: false
+  database_host:
+    description: "Database host"
+    default: 127.0.0.1
+    required: false
+  database_user:
+    description: "Database user"
+    required: true
+  database_password:
+    description: "Database password"
+    default: ""
+    required: false
+  database_name:
+    description: "Database name"
+    default: icms
+    required: false
+  database_charset:
+    description: "Charset used for database"
+    default: utf8
+    required: false
+  database_collation:
+    description: "Collation used for database"
+    default: utf8_general_ci
+    required: false
+  database_prefix:
+    description: "Prefix for each ImpressCMS database table"
+    default: icms_${{ github.run_id }}_${{ github.run_attempt }}
+    required: false
+  database_port:
+    description: "Port that is used for database connection"
+    default: "3306"
+    required: false
+  admin_name:
+    description: "Administrator name"
+    default: icms
+    required: false
+  admin_login:
+    description: "Administrator login string"
+    default: icms
+    required: false
+  admin_pass:
+    description: "Administrator password"
+    default: icms
+    required: false
+  admin_email:
+    description: "Administrator email"
+    default: noreply@impresscms.dev
+    required: false
+  language:
+    description: "Installation language"
+    default: english
+    required: false
+  app_key:
+    description: "Application key. If not specified and your ImpressCMS version supports it, it will be generated automatically"
+    default: ""
+    required: false
+
+outputs:
+  app_key:
+    description: Generated application key
+    value: ${{ steps.checks2.outputs.app_key }}
+  uses_composer:
+    description: Returns if current ImpressCMS version uses Composer for package management
+    value: ${{ steps.checks1.outputs.uses_composer }}
+  uses_phoenix:
+    description: Returns if current ImpressCMS version uses Phoenix for migrations
+    value: ${{ steps.checks2.outputs.uses_phoenix }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Doing some nessary checks (part I)
+      id: checks1
+      run: |
+        bash ${{ github.action_path }}/bin/uses-composer.sh
+      shell: bash
+
+    - name: Failing because of no composer support
+      run: |
+        echo 'ERROR: Currently only ImpressCMS versions that has composer support are supported for this action'
+        exit 1
+      shell: bash
+      if: steps.checks1.outputs.uses_composer == 'false'
+
+    - name: Install Composer dependencies (with dev)
+      run: composer install --no-progress --no-suggest --prefer-dist --optimize-autoloader
+      shell: bash
+
+    - name: Doing some nessary checks (part II)
+      id: checks2
+      run: |
+        bash ${{ github.action_path }}/bin/app-key.sh "${{ inputs.app_key }}"
+        bash ${{ github.action_path }}/bin/uses-phoenix.sh
+      shell: bash
+
+    - name: Failing because of no phoenix support
+      run: |
+        echo 'ERROR: Currently only ImpressCMS versions that has phoenix support are supported for this action'
+        exit 1
+      shell: bash
+      if: steps.checks1.outputs.uses_phoenix == 'false'
+
+    - name: Chmoding folders...
+      run: chmod -R 0777 ./storage ./modules ./themes ./uploads
+      shell: bash
+
+    - name: Installing ImpressCMS
+      env:
+        URL: ${{ inputs.url }}
+        DB_TYPE: ${{ inputs.database_type }}
+        DB_HOST: ${{ inputs.database_host }}
+        DB_USER: ${{ inputs.database_user }}
+        DB_PASS: ${{ inputs.database_password }}
+        DB_PCONNECT: "0"
+        DB_NAME: ${{ inputs.database_name }}
+        DB_CHARSET: ${{ inputs.database_charset }}
+        DB_COLLATION: ${{ inputs.database_collation }}
+        DB_PREFIX: ${{ inputs.database_prefix }}
+        DB_PORT: ${{ inputs.database_port }}
+        INSTALL_ADMIN_PASS: ${{ inputs.admin_name }}
+        INSTALL_ADMIN_LOGIN: ${{ inputs.admin_login }}
+        INSTALL_ADMIN_NAME: ${{ inputs.admin_pass }}
+        INSTALL_ADMIN_EMAIL: ${{ inputs.admin_email }}
+        INSTALL_LANGUAGE: ${{ inputs.language }}
+        APP_KEY: ${{ steps.checks2.outputs.app_key }}
+      run: ./bin/phoenix migrate -vvv
+      shell: bash
