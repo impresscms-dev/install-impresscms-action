@@ -117,7 +117,15 @@ runs:
       if: steps.checks1.outputs.uses_phoenix == 'false'
 
     - name: Chmoding folders...
-      run: chmod -R 0777 ./storage ./modules ./themes ./uploads
+      run: |
+        chmod -R 0777 ./storage || true
+        chmod -R 0777 ./modules || true 
+        chmod -R 0777 ./themes || true 
+        chmod -R 0777 ./uploads || true
+        chmod -R 0777 ./htdocs/modules || true 
+        chmod -R 0777 ./htdocs/themes || true 
+        chmod -R 0777 ./htdocs/uploads || true
+        chmod -R 0777 ./htdocs/images || true
       shell: bash
 
     - name: Installing ImpressCMS
