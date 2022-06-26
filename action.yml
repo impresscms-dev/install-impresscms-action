@@ -70,6 +70,10 @@ inputs:
     description: "Application key. If not specified and your ImpressCMS version supports it, it will be generated automatically"
     default: ""
     required: false
+  path:
+    description: "Where ImpressCMS is located?"
+    default: "."
+    required: false
 
 outputs:
   app_key:
@@ -90,6 +94,7 @@ runs:
       run: |
         bash ${{ github.action_path }}/bin/uses-composer.sh
       shell: bash
+      working-directory: ${{ inputs.path }}
 
     - name: Failing because of no composer support
       run: |
@@ -101,6 +106,7 @@ runs:
     - name: Install Composer dependencies (with dev)
       run: composer install --no-progress --no-suggest --prefer-dist --optimize-autoloader
       shell: bash
+      working-directory: ${{ inputs.path }}
 
     - name: Doing some nessary checks (part II)
       id: checks2
@@ -108,6 +114,7 @@ runs:
         bash ${{ github.action_path }}/bin/app-key.sh "${{ inputs.app_key }}"
         bash ${{ github.action_path }}/bin/uses-phoenix.sh
       shell: bash
+      working-directory: ${{ inputs.path }}
 
     - name: Failing because of no phoenix support
       run: |
@@ -119,6 +126,7 @@ runs:
     - name: Chmoding folders...
       run: chmod -R 0777 ./storage ./modules ./themes ./uploads
       shell: bash
+      working-directory: ${{ inputs.path }}
 
     - name: Installing ImpressCMS
       env:
@@ -141,3 +149,4 @@ runs:
         APP_KEY: ${{ steps.checks2.outputs.app_key }}
       run: ./bin/phoenix migrate -vvv
       shell: bash
+      working-directory: ${{ inputs.path }}
