@@ -78,6 +78,7 @@ This action supports such arguments (used in `with` keyword):
 | admin_email | No      | noreply@impresscms.dev       | Administrator email   |
 | language | No      | english                      | Installation language   |
 | app_key | No      |                            | Application key. If not specified and your ImpressCMS version supports it, it will be generated automatically   |
+| path | No | . | Path where ImpressCMS is located |
 
 ## Outputs
 
