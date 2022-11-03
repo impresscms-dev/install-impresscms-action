@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ -f "composer.json" ]; then
-  echo "::set-output name=uses_composer::true";
+  echo "uses_composer=true" >> $GITHUB_OUTPUT
 else
-  echo "::set-output name=uses_composer::false";
+  echo "uses_composer=false" >> $GITHUB_OUTPUT
 fi;

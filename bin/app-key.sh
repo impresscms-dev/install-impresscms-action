@@ -3,7 +3,7 @@
 CURRENT_APP_KEY="$1"
 
 if [ "$CURRENT_APP_KEY" == "" ]; then
-  echo "::set-output name=app_key::$(php ./bin/console generate:app:key || echo '')"
+  echo "app_key=$(php ./bin/console generate:app:key || echo '')" >> $GITHUB_OUTPUT
 else
-  echo "::set-output name=app_key::$CURRENT_APP_KEY"
+  echo "app_key=$CURRENT_APP_KEY" >> $GITHUB_OUTPUT
 fi;

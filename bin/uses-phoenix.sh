@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ -f "./bin/phoenix" ] || [ -f "./bin/phoenix.bat" ]; then
-  echo "::set-output name=uses_phoenix::1";
+  echo "uses_phoenix=1" >> $GITHUB_OUTPUT
 else
-  echo "::set-output name=uses_phoenix::0";
+  echo "uses_phoenix=0" >> $GITHUB_OUTPUT
 fi;
