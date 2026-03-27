@@ -2,11 +2,17 @@ export const services = {
   "app.context": {
     synthetic: true
   },
+  "service.actions_core": {
+    synthetic: true
+  },
   "service.file_permission": {
     class: "../Services/FilePermissionService.js"
   },
   "service.command_runner": {
-    class: "../Services/CommandRunnerService.js"
+    class: "../Services/CommandRunnerService.js",
+    arguments: [
+      "@service.actions_core"
+    ]
   },
   "service.network": {
     class: "../Services/NetworkService.js"

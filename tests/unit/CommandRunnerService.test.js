@@ -59,13 +59,12 @@ const loadService = async ({spawnMock, infoMock, errorMock}) => {
   jest.unstable_mockModule("node:child_process", () => ({
     spawn: spawnMock
   }))
-  jest.unstable_mockModule("@actions/core", () => ({
-    info: infoMock,
-    error: errorMock
-  }))
 
   const {default: CommandRunnerService} = await import("../../src/Services/CommandRunnerService.js")
-  return new CommandRunnerService()
+  return new CommandRunnerService({
+    info: infoMock,
+    error: errorMock
+  })
 }
 
 describe("CommandRunnerService", () => {

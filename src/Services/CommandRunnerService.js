@@ -1,8 +1,14 @@
 import {spawn} from "node:child_process"
-import * as core from "@actions/core"
 import CommandFailedError from "../Errors/CommandFailedError.js"
 
 export default class CommandRunnerService {
+  /**
+   * @param {{info: (message: string) => void, error: (message: string) => void}} actionsCore
+   */
+  constructor(actionsCore) {
+    this.actionsCore = actionsCore
+  }
+
   /**
    * Execute a command and stream output to action logs.
    *
@@ -26,7 +32,7 @@ export default class CommandRunnerService {
         stdout += chunk
         const message = chunk.trim()
         if (message) {
-          core.info(message)
+          this.actionsCore.info(message)
         }
       })
 
@@ -35,7 +41,7 @@ export default class CommandRunnerService {
         stderr += chunk
         const message = chunk.trim()
         if (message) {
-          core.error(message)
+          this.actionsCore.error(message)
         }
       })
 

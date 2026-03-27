@@ -13,40 +13,40 @@ const currentFilePath = fileURLToPath(import.meta.url)
 const currentDirPath = path.dirname(currentFilePath)
 
 const run = async () => {
-  const inputDto = InputDto.fromActionInput(core.getInput)
-  const projectPath = path.resolve(inputDto.path)
-  if (!existsSync(projectPath)) {
-    throw new PathNotFoundError(projectPath)
-  }
-
-  const context = {
-    projectPath
-  }
-
   const container = new ContainerBuilder()
   const loader = new JsFileLoader(container)
   await loader.load(path.join(currentDirPath, "Config", "Container.js"))
-  container.set("app.context", context)
+  container.set("service.actions_core", core)
 
-  for (const taggedService of container.findTaggedServiceIds("strategy")) {
-    const strategy = container.get(taggedService.id)
-    const supported = await strategy.isSupported(inputDto)
-    if (!supported) {
-      continue
+  const actionsCore = container.get("service.actions_core")
+  try {
+    const inputDto = InputDto.fromActionInput(actionsCore.getInput)
+    const projectPath = path.resolve(inputDto.path)
+    if (!existsSync(projectPath)) {
+      throw new PathNotFoundError(projectPath)
+    }
+    container.set("app.context", {projectPath})
+
+    for (const taggedService of container.findTaggedServiceIds("strategy")) {
+      const strategy = container.get(taggedService.id)
+      const supported = await strategy.isSupported(inputDto)
+      if (!supported) {
+        continue
+      }
+
+      const result = await strategy.apply(inputDto)
+      if (!(result instanceof ResultsDto)) {
+        throw new StrategyResultTypeError(strategy.name)
+      }
+
+      result.applyOutputs(actionsCore.setOutput)
+      return
     }
 
-    const result = await strategy.apply(inputDto)
-    if (!(result instanceof ResultsDto)) {
-      throw new StrategyResultTypeError(strategy.name)
-    }
-
-    result.applyOutputs(core.setOutput)
-    return
+    throw new NoSupportedStrategyError()
+  } catch (error) {
+    actionsCore.setFailed(error.message)
   }
-
-  throw new NoSupportedStrategyError()
 }
 
-run().catch(error => {
-  core.setFailed(error.message)
-})
+void run()
