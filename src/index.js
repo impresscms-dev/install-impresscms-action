@@ -15,18 +15,6 @@ const currentFilePath = fileURLToPath(import.meta.url)
 const currentDirPath = path.dirname(currentFilePath)
 
 /**
- * Read action input by name.
- *
- * @param {string} name Input name without `INPUT_` prefix.
- * @param {string} fallback Value used when input is not set.
- * @returns {string}
- */
-const getInput = (name, fallback = "") => {
-  const value = core.getInput(name)
-  return value === "" ? fallback : value
-}
-
-/**
  * Execute a command and stream output to action logs.
  *
  * @param {string} command Executable name.
@@ -72,7 +60,7 @@ const runCommand = async (command, args, options = {}) => await new Promise((res
 })
 
 const run = async () => {
-  const inputDto = InputDto.fromActionInput(getInput)
+  const inputDto = InputDto.fromActionInput(core.getInput)
   const projectPath = path.resolve(inputDto.path)
   if (!existsSync(projectPath)) {
     throw new PathNotFoundError(projectPath)

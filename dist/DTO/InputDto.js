@@ -64,28 +64,38 @@ export default class InputDto {
   /**
    * Create input dto from GitHub Action input reader.
    *
-   * @param {(name: string, fallback?: string) => string} getInput
+   * @param {(name: string) => string} getInput
    * @returns {InputDto}
    */
   static fromActionInput(getInput) {
+    /**
+     * @param {string} name
+     * @param {string} fallback
+     * @returns {string}
+     */
+    const read = (name, fallback) => {
+      const value = getInput(name)
+      return value === "" ? fallback : value
+    }
+
     return new InputDto({
-      url: getInput("url", "http://localhost"),
-      databaseType: getInput("database_type", "pdo.mysql"),
-      databaseHost: getInput("database_host", "127.0.0.1"),
-      databaseUser: getInput("database_user", ""),
-      databasePassword: getInput("database_password", ""),
-      databaseName: getInput("database_name", "icms"),
-      databaseCharset: getInput("database_charset", "utf8"),
-      databaseCollation: getInput("database_collation", "utf8_general_ci"),
-      databasePrefix: getInput("database_prefix", "icms"),
-      databasePort: getInput("database_port", "3306"),
-      adminName: getInput("admin_name", "icms"),
-      adminLogin: getInput("admin_login", "icms"),
-      adminPass: getInput("admin_pass", "icms"),
-      adminEmail: getInput("admin_email", "noreply@impresscms.dev"),
-      language: getInput("language", "english"),
-      appKey: getInput("app_key", ""),
-      path: getInput("path", ".")
+      url: read("url", "http://localhost"),
+      databaseType: read("database_type", "pdo.mysql"),
+      databaseHost: read("database_host", "127.0.0.1"),
+      databaseUser: read("database_user", ""),
+      databasePassword: read("database_password", ""),
+      databaseName: read("database_name", "icms"),
+      databaseCharset: read("database_charset", "utf8"),
+      databaseCollation: read("database_collation", "utf8_general_ci"),
+      databasePrefix: read("database_prefix", "icms"),
+      databasePort: read("database_port", "3306"),
+      adminName: read("admin_name", "icms"),
+      adminLogin: read("admin_login", "icms"),
+      adminPass: read("admin_pass", "icms"),
+      adminEmail: read("admin_email", "noreply@impresscms.dev"),
+      language: read("language", "english"),
+      appKey: read("app_key", ""),
+      path: read("path", ".")
     })
   }
 
