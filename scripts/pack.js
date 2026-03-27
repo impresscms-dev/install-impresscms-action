@@ -20,6 +20,9 @@ const nodeEsmGlobalsShim = [
   ""
 ].join("\n")
 
+const ignoredFormatCheckSuffixes = [".node"]
+const ignoredFormatCheckPathFragments = ["/build/Release/"]
+
 /**
  * @param {string} outputDirectory
  * @returns {void}
@@ -51,12 +54,12 @@ const buildBundle = outputDirectory => {
  * @param {string} rootDirectoryPath
  * @returns {Map<string, string>}
  */
-const collectFiles = (directoryPath, rootDirectoryPath = directoryPath) => {
+const collectFiles = (directoryPath, rootDirectoryPath = directoryPath, shouldIgnoreFile = () => false) => {
   const files = new Map()
   for (const entry of readdirSync(directoryPath, {withFileTypes: true})) {
     const absolutePath = path.join(directoryPath, entry.name)
     if (entry.isDirectory()) {
-      for (const [relativePath, fileContent] of collectFiles(absolutePath, rootDirectoryPath)) {
+      for (const [relativePath, fileContent] of collectFiles(absolutePath, rootDirectoryPath, shouldIgnoreFile)) {
         files.set(relativePath, fileContent)
       }
       continue
@@ -67,6 +70,9 @@ const collectFiles = (directoryPath, rootDirectoryPath = directoryPath) => {
     }
 
     const relativePath = path.relative(rootDirectoryPath, absolutePath).replaceAll("\\", "/")
+    if (shouldIgnoreFile(relativePath)) {
+      continue
+    }
     const content = readFileSync(absolutePath, "utf8")
     files.set(relativePath, content)
   }
@@ -90,8 +96,12 @@ const ensureDirectoriesEqual = (expectedPath, currentPath) => {
     throw new PackValidationError("Pack comparison expected directories.")
   }
 
-  const expectedFiles = collectFiles(expectedPath)
-  const currentFiles = collectFiles(currentPath)
+  const shouldIgnoreFile = relativePath => (
+    ignoredFormatCheckSuffixes.some(suffix => relativePath.endsWith(suffix)) ||
+    ignoredFormatCheckPathFragments.some(fragment => relativePath.includes(fragment))
+  )
+  const expectedFiles = collectFiles(expectedPath, expectedPath, shouldIgnoreFile)
+  const currentFiles = collectFiles(currentPath, currentPath, shouldIgnoreFile)
   const expectedKeys = Array.from(expectedFiles.keys()).sort()
   const currentKeys = Array.from(currentFiles.keys()).sort()
 
