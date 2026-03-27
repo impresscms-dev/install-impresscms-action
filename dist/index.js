@@ -7,6 +7,7 @@ import InputDto from "./DTO/InputDto.js"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
 import DefaultStrategy from "./strategies/DefaultStrategy.js"
+import TaggedContainer from "./Infrastructure/TaggedContainer.js"
 import CommandFailedError from "./Errors/CommandFailedError.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
@@ -72,10 +73,19 @@ const run = async () => {
     runCommand
   }
 
-  const strategies = [
-    new TngStrategy(context),
-    new DefaultStrategy(context)
-  ]
+  const container = new TaggedContainer()
+  container.register({
+    id: "strategy.tng",
+    tags: ["strategy"],
+    factory: () => new TngStrategy(context)
+  })
+  container.register({
+    id: "strategy.default",
+    tags: ["strategy"],
+    factory: () => new DefaultStrategy(context)
+  })
+
+  const strategies = container.resolveByTag("strategy")
 
   for (const strategy of strategies) {
     const supported = await strategy.isSupported(inputDto)
