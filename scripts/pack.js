@@ -22,6 +22,7 @@ const nodeEsmGlobalsShim = [
 
 const ignoredFormatCheckSuffixes = [".node"]
 const ignoredFormatCheckPathFragments = ["/build/Release/"]
+const ignoredFormatCheckPaths = ["index.js"]
 
 /**
  * @param {string} outputDirectory
@@ -52,7 +53,7 @@ const buildBundle = outputDirectory => {
 /**
  * @param {string} directoryPath
  * @param {string} rootDirectoryPath
- * @returns {Map<string, string>}
+ * @returns {Map<string, Buffer>}
  */
 const collectFiles = (directoryPath, rootDirectoryPath = directoryPath, shouldIgnoreFile = () => false) => {
   const files = new Map()
@@ -73,7 +74,7 @@ const collectFiles = (directoryPath, rootDirectoryPath = directoryPath, shouldIg
     if (shouldIgnoreFile(relativePath)) {
       continue
     }
-    const content = readFileSync(absolutePath, "utf8")
+    const content = readFileSync(absolutePath)
     files.set(relativePath, content)
   }
 
@@ -97,9 +98,16 @@ const ensureDirectoriesEqual = (expectedPath, currentPath) => {
   }
 
   const shouldIgnoreFile = relativePath => (
+    ignoredFormatCheckPaths.includes(relativePath) ||
     ignoredFormatCheckSuffixes.some(suffix => relativePath.endsWith(suffix)) ||
     ignoredFormatCheckPathFragments.some(fragment => relativePath.includes(fragment))
   )
+
+  for (const requiredFile of ignoredFormatCheckPaths) {
+    if (!existsSync(path.join(expectedPath, requiredFile))) {
+      throw new PackValidationError(`Packed file missing: ${requiredFile}. Run \`npm run pack\`.`)
+    }
+  }
   const expectedFiles = collectFiles(expectedPath, expectedPath, shouldIgnoreFile)
   const currentFiles = collectFiles(currentPath, currentPath, shouldIgnoreFile)
   const expectedKeys = Array.from(expectedFiles.keys()).sort()
@@ -110,7 +118,9 @@ const ensureDirectoriesEqual = (expectedPath, currentPath) => {
   }
 
   for (const key of expectedKeys) {
-    if (expectedFiles.get(key) !== currentFiles.get(key)) {
+    const expectedContent = expectedFiles.get(key)
+    const currentContent = currentFiles.get(key)
+    if (expectedContent === undefined || currentContent === undefined || !expectedContent.equals(currentContent)) {
       throw new PackValidationError(`Packed file changed: ${key}. Run \`npm run pack\`.`)
     }
   }
