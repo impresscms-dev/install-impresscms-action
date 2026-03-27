@@ -42,6 +42,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: ImpressCMS/impresscms
+          ref: v2.0.2 # tag, branch (e.g. TNG), or commit SHA
           
       - name: Installing PHP...
         uses: shivammathur/setup-php@2.19.1
@@ -60,6 +61,12 @@ jobs:
           database_password: icms
           database_port: ${{ job.services.mysql.ports['3306'] }}
 ```
+
+Choose which ImpressCMS version to install by setting `actions/checkout` `with.ref`:
+
+- Tag: `ref: v2.0.2`
+- Branch: `ref: TNG`
+- Commit: `ref: 0123abcd4567ef89...`
 
 ## Arguments
 
