@@ -8,10 +8,12 @@ export default class TngStrategy extends AbstractStrategy {
   /**
    * @param {object} context
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
+   * @param {import("../Services/CommandRunnerService.js").default} commandRunnerService
    */
-  constructor(context, filePermissionService) {
+  constructor(context, filePermissionService, commandRunnerService) {
     super(context)
     this.filePermissionService = filePermissionService
+    this.commandRunnerService = commandRunnerService
   }
 
   /**
@@ -47,8 +49,8 @@ export default class TngStrategy extends AbstractStrategy {
    * @returns {Promise<void>}
    */
   async installComposerDependencies() {
-    const {projectPath, runCommand} = this.context
-    await runCommand("composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], {
+    const {projectPath} = this.context
+    await this.commandRunnerService.run("composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], {
       cwd: projectPath,
       env: process.env
     })
@@ -63,9 +65,9 @@ export default class TngStrategy extends AbstractStrategy {
       return configuredAppKey
     }
 
-    const {projectPath, runCommand} = this.context
+    const {projectPath} = this.context
     try {
-      const result = await runCommand("php", ["./bin/console", "generate:app:key"], {
+      const result = await this.commandRunnerService.run("php", ["./bin/console", "generate:app:key"], {
         cwd: projectPath,
         env: process.env
       })
@@ -129,8 +131,8 @@ export default class TngStrategy extends AbstractStrategy {
    * @returns {Promise<void>}
    */
   async runPhoenixMigrations(environment) {
-    const {projectPath, runCommand} = this.context
-    await runCommand("./bin/phoenix", ["migrate", "-vvv"], {
+    const {projectPath} = this.context
+    await this.commandRunnerService.run("./bin/phoenix", ["migrate", "-vvv"], {
       cwd: projectPath,
       env: environment
     })

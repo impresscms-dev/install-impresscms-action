@@ -5,6 +5,9 @@ export const services = {
   "service.file_permission": {
     class: "../Services/FilePermissionService.js"
   },
+  "service.command_runner": {
+    class: "../Services/CommandRunnerService.js"
+  },
   "service.network": {
     class: "../Services/NetworkService.js"
   },
@@ -18,7 +21,8 @@ export const services = {
     class: "../strategies/TngStrategy.js",
     arguments: [
       "@app.context",
-      "@service.file_permission"
+      "@service.file_permission",
+      "@service.command_runner"
     ],
     tags: [
       {name: "strategy"}
