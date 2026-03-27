@@ -1,26 +1,9 @@
-import {chmodSync, existsSync, readdirSync, statSync} from "node:fs"
+import {existsSync} from "node:fs"
 import path from "node:path"
 import process from "node:process"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
-
-const chmodRecursive = (targetPath) => {
-  if (!existsSync(targetPath) || process.platform === "win32") {
-    return
-  }
-
-  try {
-    const stats = statSync(targetPath)
-    chmodSync(targetPath, 0o777)
-    if (stats.isDirectory()) {
-      for (const entry of readdirSync(targetPath)) {
-        chmodRecursive(path.join(targetPath, entry))
-      }
-    }
-  } catch {
-    // Best effort; keep behavior of legacy shell scripts that ignored chmod failures.
-  }
-}
+import FilePermissionService from "../Services/FilePermissionService.js"
 
 export default class TngStrategy extends AbstractStrategy {
   async isSupported() {
@@ -63,7 +46,7 @@ export default class TngStrategy extends AbstractStrategy {
     ]
 
     for (const folderPath of foldersToChmod) {
-      chmodRecursive(path.join(projectPath, folderPath))
+      FilePermissionService.chmodRecursive(path.join(projectPath, folderPath))
     }
 
     const env = {
