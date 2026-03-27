@@ -22,6 +22,14 @@ const MYSQL_DATABASE = "icms"
 const MYSQL_USER = "root"
 const MYSQL_PASSWORD = MYSQL_ROOT_PASSWORD
 const REQUIREMENTS_VERSIONS = Object.keys(RequirementsInfo).sort()
+const LEGACY_TAG_BY_VERSION = {
+  "1.0": "impresscms_1.0.3_final",
+  "1.2": "v1.2.9",
+  "1.3": "v1.3.12",
+  "1.4": "v1.4.6",
+  "1.5": "v1.5.0-rc",
+  "2.0": "v2.0.2"
+}
 const RUN_INTEGRATION_TESTS = process.env.RUN_INSTALLATION_INTEGRATION_TESTS === "1"
 const HAS_DOCKER = commandExists("docker")
 const CAN_RUN = RUN_INTEGRATION_TESTS && HAS_DOCKER
@@ -68,86 +76,6 @@ function runCommand(command, args, {cwd = process.cwd(), env = process.env} = {}
       reject(new Error(`Command failed (${command} ${args.join(" ")}), exit code ${code}, stderr: ${stderr}`))
     })
   })
-}
-
-/**
- * @returns {Promise<string[]>}
- */
-async function fetchImpresscmsTags() {
-  const {stdout} = await runCommand("git", ["ls-remote", "--tags", "--refs", IMPRESSCMS_REPOSITORY_URL])
-  return stdout
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => line.split(/\s+/)[1])
-    .filter(Boolean)
-    .map(ref => ref.replace(/^refs\/tags\//, ""))
-}
-
-/**
- * @param {string} tag
- * @returns {{major: number, minor: number, patch: number, stable: boolean, preReleaseRank: number} | null}
- */
-function parseTagVersion(tag) {
-  const normalized = tag
-    .replace(/^impresscms_/, "")
-    .replace(/_final$/i, "")
-    .replace(/_/g, ".")
-    .replace(/^v/i, "")
-
-  const stableMatch = normalized.match(/^(\d+)\.(\d+)\.(\d+)$/)
-  if (stableMatch) {
-    return {
-      major: Number(stableMatch[1]),
-      minor: Number(stableMatch[2]),
-      patch: Number(stableMatch[3]),
-      stable: true,
-      preReleaseRank: 999
-    }
-  }
-
-  const preReleaseMatch = normalized.match(/^(\d+)\.(\d+)\.(\d+)[.-]?(rc|beta|alpha)\.?(\d+)?$/i)
-  if (!preReleaseMatch) {
-    return null
-  }
-
-  const preReleaseType = preReleaseMatch[4].toLowerCase()
-  const preReleaseTypeRank = {
-    rc: 3,
-    beta: 2,
-    alpha: 1
-  }[preReleaseType]
-
-  return {
-    major: Number(preReleaseMatch[1]),
-    minor: Number(preReleaseMatch[2]),
-    patch: Number(preReleaseMatch[3]),
-    stable: false,
-    preReleaseRank: (preReleaseTypeRank * 100) + Number(preReleaseMatch[5] || 0)
-  }
-}
-
-/**
- * @param {string[]} tags
- * @param {string} majorMinor
- * @returns {string | null}
- */
-function resolveTagForMajorMinor(tags, majorMinor) {
-  const [major, minor] = majorMinor.split(".").map(Number)
-  const candidates = tags
-    .map(tag => ({tag, parsed: parseTagVersion(tag)}))
-    .filter(item => item.parsed && item.parsed.major === major && item.parsed.minor === minor)
-    .sort((left, right) => {
-      if (left.parsed.patch !== right.parsed.patch) {
-        return right.parsed.patch - left.parsed.patch
-      }
-      if (left.parsed.stable !== right.parsed.stable) {
-        return left.parsed.stable ? -1 : 1
-      }
-      return right.parsed.preReleaseRank - left.parsed.preReleaseRank
-    })
-
-  return candidates[0]?.tag ?? null
 }
 
 /**
@@ -215,16 +143,12 @@ async function startMysqlContainer() {
 integrationDescribe("Installation Integration", () => {
   jest.setTimeout(1_800_000)
 
-  /** @type {string[]} */
-  let tags = []
   /** @type {Record<string, string>} */
   let versionTagMap = {}
 
-  beforeAll(async () => {
-    tags = await fetchImpresscmsTags()
+  beforeAll(() => {
     versionTagMap = Object.fromEntries(REQUIREMENTS_VERSIONS.map(version => {
-      const tag = resolveTagForMajorMinor(tags, version)
-      return [version, tag || ""]
+      return [version, LEGACY_TAG_BY_VERSION[version] || ""]
     }))
   })
 
