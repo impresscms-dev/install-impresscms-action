@@ -87,7 +87,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 4
       matrix:
         include:
           - variant: "1.0"
