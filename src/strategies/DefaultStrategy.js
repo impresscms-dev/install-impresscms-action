@@ -3,8 +3,7 @@ import path from "node:path"
 import process from "node:process"
 import {randomBytes} from "node:crypto"
 import {spawn} from "node:child_process"
-import {CookieJar} from "tough-cookie"
-import makeFetchCookie from "fetch-cookie"
+import {request as playwrightRequest} from "playwright"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
 import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
@@ -19,35 +18,28 @@ const normalizePath = value => value.replaceAll("\\", "/")
 
 /**
  * @param {string} baseUrl
- * @returns {{send: (pathname: string, options?: {method?: string, formData?: Record<string, string>, followRedirect?: boolean}) => Promise<Response>}}
+ * @returns {Promise<{send: (pathname: string, options?: {method?: string, formData?: Record<string, string>, followRedirect?: boolean}) => Promise<import("playwright").APIResponse>, dispose: () => Promise<void>}>}
  */
-const createInstallerClient = baseUrl => {
-  const cookieJar = new CookieJar()
-  const fetchWithCookies = makeFetchCookie(fetch, cookieJar)
+const createInstallerClient = async baseUrl => {
+  const requestContext = await playwrightRequest.newContext({
+    baseURL: baseUrl
+  })
 
   /**
    * @param {string} pathname
    * @param {{method?: string, formData?: Record<string, string>, followRedirect?: boolean}} options
-   * @returns {Promise<Response>}
+   * @returns {Promise<import("playwright").APIResponse>}
    */
   const send = async (pathname, {method = "GET", formData = null, followRedirect = true} = {}) => {
-    const headers = {}
-
-    let body = undefined
-    if (formData) {
-      headers["Content-Type"] = "application/x-www-form-urlencoded"
-      body = new URLSearchParams(formData).toString()
-    }
-
-    const response = await fetchWithCookies(`${baseUrl}${pathname}`, {
+    const response = await requestContext.fetch(pathname, {
       method,
-      headers,
-      body,
-      redirect: "manual"
+      form: formData ?? undefined,
+      maxRedirects: 0
     })
 
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location")
+    const status = response.status()
+    if (status >= 300 && status < 400) {
+      const location = response.headers().location
       if (!location) {
         throw new RedirectLocationMissingError(pathname)
       }
@@ -58,15 +50,19 @@ const createInstallerClient = baseUrl => {
       return await send(redirectUrl.pathname + redirectUrl.search, {method: "GET"})
     }
 
-    if (response.status >= 400) {
+    if (status >= 400) {
       const bodyText = await response.text()
-      throw new InstallerRequestFailedError(pathname, response.status, bodyText)
+      throw new InstallerRequestFailedError(pathname, status, bodyText)
     }
 
     return response
   }
 
-  return {send}
+  const dispose = async () => {
+    await requestContext.dispose()
+  }
+
+  return {send, dispose}
 }
 
 export default class DefaultStrategy extends AbstractStrategy {
@@ -178,20 +174,24 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   async runInstaller(baseUrl, paths, inputDto) {
     await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
-    const client = createInstallerClient(baseUrl)
+    const client = await createInstallerClient(baseUrl)
 
-    await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
-    await client.send("/install/page_start.php")
-    await client.send("/install/page_modcheck.php")
-    await client.send("/install/page_pathsettings.php", {method: "POST", formData: this.createPathSettingsFormData(paths, inputDto)})
-    await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto)})
-    await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createDbSettingsFormData(inputDto)})
-    await client.send("/install/page_configsave.php", {method: "POST", formData: {}})
-    await client.send("/install/page_tablescreate.php", {method: "POST", formData: {}})
-    await client.send("/install/page_siteinit.php", {method: "POST", formData: this.createSiteInitFormData(inputDto)})
-    await client.send("/install/page_tablesfill.php", {method: "POST", formData: {}})
-    await client.send("/install/page_modulesinstall.php", {method: "POST", formData: {mod: "0"}})
-    await client.send("/install/page_end.php")
+    try {
+      await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
+      await client.send("/install/page_start.php")
+      await client.send("/install/page_modcheck.php")
+      await client.send("/install/page_pathsettings.php", {method: "POST", formData: this.createPathSettingsFormData(paths, inputDto)})
+      await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto)})
+      await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createDbSettingsFormData(inputDto)})
+      await client.send("/install/page_configsave.php", {method: "POST", formData: {}})
+      await client.send("/install/page_tablescreate.php", {method: "POST", formData: {}})
+      await client.send("/install/page_siteinit.php", {method: "POST", formData: this.createSiteInitFormData(inputDto)})
+      await client.send("/install/page_tablesfill.php", {method: "POST", formData: {}})
+      await client.send("/install/page_modulesinstall.php", {method: "POST", formData: {mod: "0"}})
+      await client.send("/install/page_end.php")
+    } finally {
+      await client.dispose()
+    }
   }
 
   /**
