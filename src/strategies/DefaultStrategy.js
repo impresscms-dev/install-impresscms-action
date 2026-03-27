@@ -78,7 +78,7 @@ export default class DefaultStrategy extends AbstractStrategy {
 
   /**
    * @param {string} projectPath
-   * @returns {{projectPath: string, htdocsPath: string, trustPath: string}}
+   * @returns {{projectPath: string, htdocsPath: string, trustPath: string, containerRootPath: string, containerTrustPath: string}}
    */
   resolveLegacyPaths(projectPath) {
     return {

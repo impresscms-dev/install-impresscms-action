@@ -134,9 +134,9 @@ export default class TngStrategy extends AbstractStrategy {
       DB_COLLATION: inputDto.databaseCollation,
       DB_PREFIX: inputDto.databasePrefix,
       DB_PORT: inputDto.databasePort,
-      INSTALL_ADMIN_PASS: inputDto.adminName,
+      INSTALL_ADMIN_PASS: inputDto.adminPass,
       INSTALL_ADMIN_LOGIN: inputDto.adminLogin,
-      INSTALL_ADMIN_NAME: inputDto.adminPass,
+      INSTALL_ADMIN_NAME: inputDto.adminName,
       INSTALL_ADMIN_EMAIL: inputDto.adminEmail,
       INSTALL_LANGUAGE: inputDto.language,
       APP_KEY: appKey

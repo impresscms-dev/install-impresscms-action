@@ -53,6 +53,7 @@ const buildBundle = outputDirectory => {
 /**
  * @param {string} directoryPath
  * @param {string} rootDirectoryPath
+ * @param {(relativePath: string) => boolean} shouldIgnoreFile
  * @returns {Map<string, Buffer>}
  */
 const collectFiles = (directoryPath, rootDirectoryPath = directoryPath, shouldIgnoreFile = () => false) => {

@@ -62,7 +62,15 @@ describe("TngStrategy", () => {
     expect(result.usesComposer).toBe(true)
     expect(result.usesPhoenix).toBe(true)
     expect(commandRunnerService.run).toHaveBeenNthCalledWith(1, "composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], expect.any(Object))
-    expect(commandRunnerService.run).toHaveBeenNthCalledWith(2, "./bin/phoenix", ["migrate", "-vvv"], expect.any(Object))
+    expect(commandRunnerService.run).toHaveBeenNthCalledWith(2, "./bin/phoenix", ["migrate", "-vvv"], expect.objectContaining({
+      cwd: "/repo",
+      env: expect.objectContaining({
+        INSTALL_ADMIN_PASS: "secret",
+        INSTALL_ADMIN_LOGIN: "admin",
+        INSTALL_ADMIN_NAME: "admin",
+        INSTALL_ADMIN_EMAIL: "admin@example.test"
+      })
+    }))
     expect(filePermissionService.chmodRecursive).toHaveBeenCalled()
   })
 

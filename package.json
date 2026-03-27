@@ -10,7 +10,7 @@
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --config jest.integration.config.js",
-    "format": "node scripts/pack.js --format",
+    "format": "npm run pack",
     "format-check": "node scripts/pack.js --format-check",
     "lint": "eslint --no-warn-ignored \"src/**/*.js\" \"scripts/**/*.js\"",
     "pack": "node scripts/pack.js"
