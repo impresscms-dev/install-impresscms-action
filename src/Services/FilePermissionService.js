@@ -3,6 +3,12 @@ import path from "node:path"
 import process from "node:process"
 
 export default class FilePermissionService {
+  /**
+   * Recursively chmod a path to 0777 using best-effort behavior.
+   *
+   * @param {string} targetPath
+   * @returns {void}
+   */
   static chmodRecursive(targetPath) {
     if (!existsSync(targetPath) || process.platform === "win32") {
       return

@@ -12,8 +12,23 @@ import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
 import NoSupportedStrategyError from "./Errors/NoSupportedStrategyError.js"
 
+/**
+ * Read action input by name.
+ *
+ * @param {string} name Input name without `INPUT_` prefix.
+ * @param {string} fallback Value used when input is not set.
+ * @returns {string}
+ */
 const getInput = (name, fallback = "") => process.env[`INPUT_${name.toUpperCase()}`] ?? fallback
 
+/**
+ * Execute a command and stream output to action logs.
+ *
+ * @param {string} command Executable name.
+ * @param {string[]} args Executable arguments.
+ * @param {import("node:child_process").SpawnOptions} options Spawn options.
+ * @returns {Promise<{stdout: string, stderr: string}>}
+ */
 const runCommand = async (command, args, options = {}) => await new Promise((resolve, reject) => {
   const child = spawn(command, args, {
     stdio: ["ignore", "pipe", "pipe"],

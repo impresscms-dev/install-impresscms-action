@@ -1,4 +1,24 @@
 export default class InputDto {
+  /**
+   * @param {object} [params]
+   * @param {string} [params.url]
+   * @param {string} [params.databaseType]
+   * @param {string} [params.databaseHost]
+   * @param {string} [params.databaseUser]
+   * @param {string} [params.databasePassword]
+   * @param {string} [params.databaseName]
+   * @param {string} [params.databaseCharset]
+   * @param {string} [params.databaseCollation]
+   * @param {string} [params.databasePrefix]
+   * @param {string} [params.databasePort]
+   * @param {string} [params.adminName]
+   * @param {string} [params.adminLogin]
+   * @param {string} [params.adminPass]
+   * @param {string} [params.adminEmail]
+   * @param {string} [params.language]
+   * @param {string} [params.appKey]
+   * @param {string} [params.path]
+   */
   constructor({
     url = "http://localhost",
     databaseType = "pdo.mysql",
@@ -37,6 +57,12 @@ export default class InputDto {
     this.path = path
   }
 
+  /**
+   * Create input dto from GitHub Action input reader.
+   *
+   * @param {(name: string, fallback?: string) => string} getInput
+   * @returns {InputDto}
+   */
   static fromActionInput(getInput) {
     return new InputDto({
       url: getInput("url", "http://localhost"),

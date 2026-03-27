@@ -6,6 +6,10 @@ import ResultsDto from "../DTO/ResultsDto.js"
 import FilePermissionService from "../Services/FilePermissionService.js"
 
 export default class TngStrategy extends AbstractStrategy {
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Promise<boolean>}
+   */
   async isSupported(inputDto) {
     void inputDto
     const {projectPath} = this.context
@@ -14,6 +18,10 @@ export default class TngStrategy extends AbstractStrategy {
     return hasComposer && hasPhoenix
   }
 
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Promise<ResultsDto>}
+   */
   async apply(inputDto) {
     await this.installComposerDependencies()
     const appKey = await this.resolveAppKey(inputDto.appKey)
@@ -27,6 +35,9 @@ export default class TngStrategy extends AbstractStrategy {
     })
   }
 
+  /**
+   * @returns {Promise<void>}
+   */
   async installComposerDependencies() {
     const {projectPath, runCommand} = this.context
     await runCommand("composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], {
@@ -35,6 +46,10 @@ export default class TngStrategy extends AbstractStrategy {
     })
   }
 
+  /**
+   * @param {string} configuredAppKey
+   * @returns {Promise<string>}
+   */
   async resolveAppKey(configuredAppKey) {
     if (configuredAppKey) {
       return configuredAppKey
@@ -52,6 +67,9 @@ export default class TngStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @returns {void}
+   */
   ensureWritableFolders() {
     const {projectPath} = this.context
     const foldersToChmod = [
@@ -70,6 +88,11 @@ export default class TngStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} appKey
+   * @returns {NodeJS.ProcessEnv}
+   */
   createPhoenixEnvironment(inputDto, appKey) {
     return {
       ...process.env,
@@ -93,6 +116,10 @@ export default class TngStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {NodeJS.ProcessEnv} environment
+   * @returns {Promise<void>}
+   */
   async runPhoenixMigrations(environment) {
     const {projectPath, runCommand} = this.context
     await runCommand("./bin/phoenix", ["migrate", "-vvv"], {

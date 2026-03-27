@@ -11,12 +11,25 @@ import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError
 import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
 import NetworkService from "../Services/NetworkService.js"
 
+/**
+ * @param {string} value
+ * @returns {string}
+ */
 const normalizePath = value => value.replaceAll("\\", "/")
 
+/**
+ * @param {string} baseUrl
+ * @returns {{send: (pathname: string, options?: {method?: string, formData?: Record<string, string>, followRedirect?: boolean}) => Promise<Response>}}
+ */
 const createInstallerClient = baseUrl => {
   const cookieJar = new CookieJar()
   const fetchWithCookies = makeFetchCookie(fetch, cookieJar)
 
+  /**
+   * @param {string} pathname
+   * @param {{method?: string, formData?: Record<string, string>, followRedirect?: boolean}} options
+   * @returns {Promise<Response>}
+   */
   const send = async (pathname, {method = "GET", formData = null, followRedirect = true} = {}) => {
     const headers = {}
 
@@ -57,6 +70,10 @@ const createInstallerClient = baseUrl => {
 }
 
 export default class DefaultStrategy extends AbstractStrategy {
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Promise<boolean>}
+   */
   async isSupported(inputDto) {
     void inputDto
     const {projectPath} = this.context
@@ -66,6 +83,10 @@ export default class DefaultStrategy extends AbstractStrategy {
     return hasLegacyInstaller && hasLegacyMainFile && !hasComposer
   }
 
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Promise<ResultsDto>}
+   */
   async apply(inputDto) {
     const paths = this.resolveLegacyPaths()
     this.ensureTrustPath(paths.trustPath)
@@ -85,6 +106,9 @@ export default class DefaultStrategy extends AbstractStrategy {
     })
   }
 
+  /**
+   * @returns {{projectPath: string, htdocsPath: string, trustPath: string}}
+   */
   resolveLegacyPaths() {
     const {projectPath} = this.context
     return {
@@ -94,10 +118,18 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {string} trustPath
+   * @returns {void}
+   */
   ensureTrustPath(trustPath) {
     mkdirSync(trustPath, {recursive: true})
   }
 
+  /**
+   * @param {{projectPath: string, htdocsPath: string, trustPath: string}} paths
+   * @returns {Promise<void>}
+   */
   async applyLegacyPermissions(paths) {
     const {projectPath, runCommand} = this.context
     const chmodCandidates = [
@@ -120,6 +152,10 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {string} htdocsPath
+   * @returns {Promise<{baseUrl: string, phpServer: import("node:child_process").ChildProcessWithoutNullStreams}>}
+   */
   async startPhpServer(htdocsPath) {
     const port = await NetworkService.getFreePort()
     const baseUrl = `http://127.0.0.1:${port}`
@@ -134,6 +170,12 @@ export default class DefaultStrategy extends AbstractStrategy {
     return {baseUrl, phpServer}
   }
 
+  /**
+   * @param {string} baseUrl
+   * @param {{projectPath: string, htdocsPath: string, trustPath: string}} paths
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Promise<void>}
+   */
   async runInstaller(baseUrl, paths, inputDto) {
     await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
     const client = createInstallerClient(baseUrl)
@@ -152,6 +194,11 @@ export default class DefaultStrategy extends AbstractStrategy {
     await client.send("/install/page_end.php")
   }
 
+  /**
+   * @param {{projectPath: string, htdocsPath: string, trustPath: string}} paths
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Record<string, string>}
+   */
   createPathSettingsFormData(paths, inputDto) {
     return {
       URL: inputDto.url,
@@ -160,6 +207,10 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Record<string, string>}
+   */
   createDbConnectionFormData(inputDto) {
     return {
       DB_TYPE: inputDto.databaseType,
@@ -170,6 +221,10 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Record<string, string>}
+   */
   createDbSettingsFormData(inputDto) {
     return {
       DB_NAME: inputDto.databaseName,
@@ -180,6 +235,10 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
   }
 
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @returns {Record<string, string>}
+   */
   createSiteInitFormData(inputDto) {
     return {
       adminname: inputDto.adminName,

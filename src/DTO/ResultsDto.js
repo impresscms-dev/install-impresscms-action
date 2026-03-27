@@ -1,4 +1,10 @@
 export default class ResultsDto {
+  /**
+   * @param {object} [params]
+   * @param {string} [params.appKey]
+   * @param {boolean} [params.usesComposer]
+   * @param {boolean} [params.usesPhoenix]
+   */
   constructor({
     appKey = "",
     usesComposer = false,
@@ -9,6 +15,11 @@ export default class ResultsDto {
     this.usesPhoenix = usesPhoenix
   }
 
+  /**
+   * Write action outputs.
+   *
+   * @param {(name: string, value: string | boolean) => void} setOutput
+   */
   applyOutputs(setOutput) {
     setOutput("app_key", this.appKey)
     setOutput("uses_composer", this.usesComposer)
