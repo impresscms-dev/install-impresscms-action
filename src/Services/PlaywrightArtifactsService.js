@@ -39,8 +39,8 @@ export default class PlaywrightArtifactsService {
    * @returns {string}
    */
   createArtifactName() {
-    const runId = this.gitHubContextService.getRunId()
-    const runAttempt = this.gitHubContextService.getRunAttempt()
+    const runId = this.gitHubContextService.runId
+    const runAttempt = this.gitHubContextService.runAttempt
     return `install-impresscms-playwright-debug-${runId}-${runAttempt}-${Date.now()}`
   }
 

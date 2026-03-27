@@ -17,14 +17,14 @@ describe("GitHubContextService", () => {
   test("returns run id and attempt from GitHub context", async () => {
     const service = await loadService({runId: 123, runAttempt: 2})
 
-    expect(service.getRunId()).toBe("123")
-    expect(service.getRunAttempt()).toBe("2")
+    expect(service.runId).toBe("123")
+    expect(service.runAttempt).toBe("2")
   })
 
   test("returns local defaults when context values are missing", async () => {
     const service = await loadService()
 
-    expect(service.getRunId()).toBe("local")
-    expect(service.getRunAttempt()).toBe("1")
+    expect(service.runId).toBe("local")
+    expect(service.runAttempt).toBe("1")
   })
 })

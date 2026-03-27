@@ -4,7 +4,7 @@ export default class GitHubContextService {
   /**
    * @returns {string}
    */
-  getRunId() {
+  get runId() {
     if (context.runId) {
       return String(context.runId)
     }
@@ -15,7 +15,7 @@ export default class GitHubContextService {
   /**
    * @returns {string}
    */
-  getRunAttempt() {
+  get runAttempt() {
     if (context.runAttempt) {
       return String(context.runAttempt)
     }

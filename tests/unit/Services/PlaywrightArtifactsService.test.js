@@ -31,10 +31,11 @@ describe("PlaywrightArtifactsService", () => {
     const info = jest.fn()
     const warning = jest.fn()
     const actionsCore = {info, warning}
-    const gitHubContextService = {
-      getRunId: jest.fn().mockReturnValue("123"),
-      getRunAttempt: jest.fn().mockReturnValue("2")
-    }
+    const runIdGetter = jest.fn().mockReturnValue("123")
+    const runAttemptGetter = jest.fn().mockReturnValue("2")
+    const gitHubContextService = {}
+    Object.defineProperty(gitHubContextService, "runId", {get: runIdGetter})
+    Object.defineProperty(gitHubContextService, "runAttempt", {get: runAttemptGetter})
     const service = new PlaywrightArtifactsService(actionsCore, gitHubContextService)
     const playwrightInstallerClient = {
       captureFailureArtifacts: jest.fn().mockResolvedValue({
@@ -53,8 +54,8 @@ describe("PlaywrightArtifactsService", () => {
       "/tmp/pw"
     )
     expect(mkdtemp).toHaveBeenCalledWith(expect.stringContaining("install-impresscms-playwright-"))
-    expect(gitHubContextService.getRunId).toHaveBeenCalledTimes(1)
-    expect(gitHubContextService.getRunAttempt).toHaveBeenCalledTimes(1)
+    expect(runIdGetter).toHaveBeenCalledTimes(1)
+    expect(runAttemptGetter).toHaveBeenCalledTimes(1)
     expect(info).toHaveBeenCalledWith(expect.stringContaining("Uploaded Playwright debug artifacts"))
     expect(warning).not.toHaveBeenCalled()
   })
@@ -63,9 +64,12 @@ describe("PlaywrightArtifactsService", () => {
     const {PlaywrightArtifactsService, uploadArtifact} = await loadService()
     const info = jest.fn()
     const warning = jest.fn()
+    const gitHubContextService = {}
+    Object.defineProperty(gitHubContextService, "runId", {get: () => "123"})
+    Object.defineProperty(gitHubContextService, "runAttempt", {get: () => "2"})
     const service = new PlaywrightArtifactsService(
       {info, warning},
-      {getRunId: jest.fn().mockReturnValue("123"), getRunAttempt: jest.fn().mockReturnValue("2")}
+      gitHubContextService
     )
     const playwrightInstallerClient = {
       captureFailureArtifacts: jest.fn().mockResolvedValue({
@@ -85,9 +89,12 @@ describe("PlaywrightArtifactsService", () => {
       mkdtempImpl: jest.fn().mockRejectedValue(new Error("temp dir failed"))
     })
     const warning = jest.fn()
+    const gitHubContextService = {}
+    Object.defineProperty(gitHubContextService, "runId", {get: () => "123"})
+    Object.defineProperty(gitHubContextService, "runAttempt", {get: () => "2"})
     const service = new PlaywrightArtifactsService(
       {info: jest.fn(), warning},
-      {getRunId: jest.fn().mockReturnValue("123"), getRunAttempt: jest.fn().mockReturnValue("2")}
+      gitHubContextService
     )
     const playwrightInstallerClient = {
       captureFailureArtifacts: jest.fn().mockRejectedValue(new Error("capture failed"))
