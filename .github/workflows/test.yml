@@ -143,6 +143,11 @@ jobs:
           extensions: curl, gd, pdo_mysql, json, mbstring, session
           coverage: none
 
+      - name: Reset Docker auth
+        run: |
+          docker logout || true
+          rm -f ~/.docker/config.json
+
       - name: Install dependencies
         run: npm ci
 
