@@ -1,0 +1,14 @@
+{
+  "name": "install-impresscms-action",
+  "description": "GitHub action to install ImpressCMS",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "format": "node scripts/pack.js --format",
+    "format-check": "node scripts/pack.js --format-check",
+    "lint": "node --check src/index.js",
+    "pack": "node scripts/pack.js"
+  }
+}

@@ -5,7 +5,10 @@
 
 GitHub action to install [ImpressCMS](https://github.com/ImpressCMS/impresscms).
 
-At current moment it works only with ImpressCMS versions that uses [Composer](https://getcomposer.org) and [Phoenix](https://github.com/lulco/phoenix). 
+This action auto-detects supported installation strategies. Currently it supports:
+
+- TNG-style installs that use [Composer](https://getcomposer.org) and [Phoenix](https://github.com/lulco/phoenix)
+- Legacy branch installs through the classic web installer in `htdocs/install`
 
 ## Usage
 
