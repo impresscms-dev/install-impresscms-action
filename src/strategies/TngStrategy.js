@@ -25,8 +25,9 @@ export default class TngStrategy extends AbstractStrategy {
   async isSupported(inputDto, projectPath) {
     void inputDto
     const hasComposer = existsSync(path.join(projectPath, "composer.json"))
-    const hasPhoenix = existsSync(path.join(projectPath, "bin", "phoenix")) || existsSync(path.join(projectPath, "bin", "phoenix.bat"))
-    return hasComposer && hasPhoenix
+    const hasConsole = existsSync(path.join(projectPath, "bin", "console")) || existsSync(path.join(projectPath, "bin", "console.bat"))
+    const hasPhoenixConfig = existsSync(path.join(projectPath, "phoenix.php"))
+    return hasComposer && (hasConsole || hasPhoenixConfig)
   }
 
   /**
