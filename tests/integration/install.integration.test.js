@@ -10,6 +10,7 @@ import ImpresscmsRepositoryInfo from "../../src/Config/ImpresscmsRepositoryInfo.
 import InputDto from "../../src/DTO/InputDto.js"
 import CommandRunnerService from "../../src/Services/CommandRunnerService.js"
 import CommandExistenceService from "../../src/Services/CommandExistenceService.js"
+import GitService from "../../src/Services/GitService.js"
 import FilePermissionService from "../../src/Services/FilePermissionService.js"
 import ImpressVersionService from "../../src/Services/ImpressVersionService.js"
 import NetworkService from "../../src/Services/NetworkService.js"
@@ -107,15 +108,6 @@ function createInputDto(majorMinor, databaseHost, databasePort) {
 }
 
 /**
- * @param {string} targetPath
- * @param {string} ref
- * @returns {Promise<void>}
- */
-async function checkoutImpresscmsReference(targetPath, ref) {
-  await runCommand("git", ["clone", "--depth", "1", "--branch", ref, ImpresscmsRepositoryInfo.url, targetPath])
-}
-
-/**
  * @returns {Promise<import("testcontainers").StartedTestContainer>}
  */
 async function startMysqlContainer() {
@@ -159,9 +151,10 @@ integrationDescribe("Installation Integration", () => {
       const checkoutPath = path.join(tempRoot, `impresscms-${version.replace(".", "_")}`)
       const mysql = await startMysqlContainer()
       const actionsCore = createActionsCoreStub()
+      const gitService = new GitService({run: runCommand}, ImpresscmsRepositoryInfo.url)
 
       try {
-        await checkoutImpresscmsReference(checkoutPath, targetTag)
+        await gitService.checkoutImpresscmsReference(checkoutPath, targetTag)
 
         const strategy = new DefaultStrategy(
           new NetworkService(actionsCore),
@@ -193,10 +186,11 @@ integrationDescribe("Installation Integration", () => {
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
     const mysql = await startMysqlContainer()
     const actionsCore = createActionsCoreStub()
+    const gitService = new GitService({run: runCommand}, ImpresscmsRepositoryInfo.url)
     const tngRef = INTEGRATION_IMPRESSCMS_REF || "TNG"
 
     try {
-      await checkoutImpresscmsReference(checkoutPath, tngRef)
+      await gitService.checkoutImpresscmsReference(checkoutPath, tngRef)
 
       const strategy = new TngStrategy(
         new FilePermissionService(actionsCore),
