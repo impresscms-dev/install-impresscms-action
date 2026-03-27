@@ -56,9 +56,28 @@ export default class ApacheContainerInstance {
     if (!this.#container) {
       return
     }
+    await this.relaxBindMountPermissions()
     await this.#container.stop()
     this.#container = null
     this.#baseUrl = ""
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async relaxBindMountPermissions() {
+    if (!this.#container || typeof this.#container.exec !== "function") {
+      return
+    }
+
+    const targets = [this.#config.containerRootPath, this.#config.containerTrustPath]
+    for (const target of targets) {
+      try {
+        await this.#container.exec(["chmod", "-R", "a+rwx", target])
+      } catch (error) {
+        void error
+      }
+    }
   }
 
   /**

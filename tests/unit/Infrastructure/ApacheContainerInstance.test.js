@@ -6,6 +6,7 @@ const loadInstance = async ({startedContainer = null} = {}) => {
   const startMock = jest.fn().mockResolvedValue(startedContainer ?? {
     getHost: () => "127.0.0.1",
     getMappedPort: () => 43123,
+    exec: jest.fn().mockResolvedValue({exitCode: 0}),
     stop: jest.fn().mockResolvedValue(undefined)
   })
 
@@ -119,6 +120,7 @@ describe("ApacheContainerInstance", () => {
     const startedContainer = {
       getHost: () => "localhost",
       getMappedPort: () => 8080,
+      exec: jest.fn().mockResolvedValue({exitCode: 0}),
       stop: jest.fn().mockResolvedValue(undefined)
     }
     const {ApacheContainerInstance} = await loadInstance({startedContainer})
@@ -135,7 +137,32 @@ describe("ApacheContainerInstance", () => {
     expect(instance.baseUrl).toBe("http://localhost:8080")
     await instance.stop()
 
+    expect(startedContainer.exec).toHaveBeenNthCalledWith(1, ["chmod", "-R", "a+rwx", "/r"])
+    expect(startedContainer.exec).toHaveBeenNthCalledWith(2, ["chmod", "-R", "a+rwx", "/tr"])
     expect(startedContainer.stop).toHaveBeenCalledTimes(1)
     expect(instance.baseUrl).toBe("")
+  })
+
+  test("stop continues when permission normalization command fails", async () => {
+    const startedContainer = {
+      getHost: () => "localhost",
+      getMappedPort: () => 8080,
+      exec: jest.fn().mockRejectedValue(new Error("exec failed")),
+      stop: jest.fn().mockResolvedValue(undefined)
+    }
+    const {ApacheContainerInstance} = await loadInstance({startedContainer})
+    const instance = new ApacheContainerInstance({
+      phpVersion: "8.1",
+      htdocsPath: "/h",
+      trustPath: "/t",
+      containerRootPath: "/r",
+      containerTrustPath: "/tr"
+    })
+
+    await instance.start()
+    await instance.stop()
+
+    expect(startedContainer.exec).toHaveBeenCalledTimes(2)
+    expect(startedContainer.stop).toHaveBeenCalledTimes(1)
   })
 })
