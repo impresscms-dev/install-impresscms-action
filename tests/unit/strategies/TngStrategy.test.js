@@ -74,4 +74,13 @@ describe("TngStrategy", () => {
 
     await expect(strategy.resolveAppKey("", "/repo")).resolves.toBe("")
   })
+
+  test("resolveCliDatabaseHost normalizes localhost values", async () => {
+    const {TngStrategy} = await loadStrategy()
+    const strategy = new TngStrategy({chmodRecursive: jest.fn()}, {run: jest.fn()}, {detect: jest.fn()})
+
+    expect(strategy.resolveCliDatabaseHost("localhost")).toBe("127.0.0.1")
+    expect(strategy.resolveCliDatabaseHost("::1")).toBe("127.0.0.1")
+    expect(strategy.resolveCliDatabaseHost("mysql")).toBe("mysql")
+  })
 })

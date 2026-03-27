@@ -125,7 +125,7 @@ export default class TngStrategy extends AbstractStrategy {
       ...process.env,
       URL: inputDto.url,
       DB_TYPE: inputDto.databaseType,
-      DB_HOST: inputDto.databaseHost,
+      DB_HOST: this.resolveCliDatabaseHost(inputDto.databaseHost),
       DB_USER: inputDto.databaseUser,
       DB_PASS: inputDto.databasePassword,
       DB_PCONNECT: "0",
@@ -141,6 +141,18 @@ export default class TngStrategy extends AbstractStrategy {
       INSTALL_LANGUAGE: inputDto.language,
       APP_KEY: appKey
     }
+  }
+
+  /**
+   * @param {string} databaseHost
+   * @returns {string}
+   */
+  resolveCliDatabaseHost(databaseHost) {
+    if (databaseHost === "localhost" || databaseHost === "::1") {
+      return "127.0.0.1"
+    }
+
+    return databaseHost
   }
 
   /**
