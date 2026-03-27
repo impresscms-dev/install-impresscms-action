@@ -2,7 +2,6 @@ import {existsSync} from "node:fs"
 import path from "node:path"
 import {fileURLToPath} from "node:url"
 import {ContainerBuilder, JsFileLoader} from "node-dependency-injection"
-import InputDto from "./DTO/InputDto.js"
 import ResultsDto from "./DTO/ResultsDto.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
@@ -18,8 +17,10 @@ const run = async () => {
 
   /** @type {import("./Services/ActionsCoreService.js").default} */
   const actionsCore = container.get("service.actions_core")
+  /** @type {import("./Factories/InputDtoFactory.js").default} */
+  const inputDtoFactory = container.get("factory.input_dto")
   try {
-    const inputDto = InputDto.fromActionInput(name => actionsCore.getInput(name))
+    const inputDto = inputDtoFactory.create()
     const projectPath = path.resolve(inputDto.path)
     if (!existsSync(projectPath)) {
       throw new PathNotFoundError(projectPath)

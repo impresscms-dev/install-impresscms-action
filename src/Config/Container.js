@@ -2,6 +2,12 @@ export const services = {
   "service.actions_core": {
     class: "../Services/ActionsCoreService.js"
   },
+  "factory.input_dto": {
+    class: "../Factories/InputDtoFactory.js",
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
   "service.file_permission": {
     class: "../Services/FilePermissionService.js",
     arguments: [
