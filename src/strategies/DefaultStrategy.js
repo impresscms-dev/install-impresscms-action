@@ -118,13 +118,17 @@ export default class DefaultStrategy extends AbstractStrategy {
       throw new ImpressVersionRequirementsMissingError(impressVersion)
     }
 
-    return await this.apacheContainerBuilder.build({
+    const apacheContainer = this.apacheContainerBuilder.build({
       phpVersion: phpRequirements.max,
       htdocsPath: paths.htdocsPath,
       trustPath: paths.trustPath,
       containerRootPath: paths.containerRootPath,
       containerTrustPath: paths.containerTrustPath
     })
+
+    await apacheContainer.start()
+
+    return apacheContainer
   }
 
   /**
