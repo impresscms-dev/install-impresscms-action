@@ -16,7 +16,7 @@ import DefaultStrategy from "../../src/strategies/DefaultStrategy.js"
 import TngStrategy from "../../src/strategies/TngStrategy.js"
 
 const IMPRESSCMS_REPOSITORY_URL = "https://github.com/ImpressCMS/impresscms.git"
-const MYSQL_IMAGE = process.env.INTEGRATION_MYSQL_IMAGE || "mysql:5.7"
+const MYSQL_IMAGE = process.env.INTEGRATION_MYSQL_IMAGE || "mariadb:10.6"
 const MYSQL_ROOT_PASSWORD = "icms"
 const MYSQL_DATABASE = "icms"
 const MYSQL_USER = "root"
