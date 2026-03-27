@@ -1,7 +1,6 @@
 import {mkdtemp, rm} from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
-import {spawn} from "node:child_process"
 import {jest} from "@jest/globals"
 import {GenericContainer, Wait} from "testcontainers"
 import RequirementsInfo from "../../src/Config/RequirementsInfo.js"
@@ -34,40 +33,6 @@ const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
   ? REQUIREMENTS_VERSIONS
   : (LegacyTagByVersion[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
 const runTngVariant = INTEGRATION_VARIANT === "all" || INTEGRATION_VARIANT === "tng"
-
-/**
- * @param {string} command
- * @param {string[]} args
- * @param {{cwd?: string, env?: NodeJS.ProcessEnv}} [options]
- * @returns {Promise<{stdout: string, stderr: string}>}
- */
-function runCommand(command, args, {cwd = process.cwd(), env = process.env} = {}) {
-  return new Promise((resolve, reject) => {
-    const childProcess = spawn(command, args, {
-      cwd,
-      env,
-      stdio: ["ignore", "pipe", "pipe"]
-    })
-
-    let stdout = ""
-    let stderr = ""
-    childProcess.stdout.on("data", chunk => {
-      stdout += String(chunk)
-    })
-    childProcess.stderr.on("data", chunk => {
-      stderr += String(chunk)
-    })
-    childProcess.on("error", reject)
-    childProcess.on("close", code => {
-      if (code === 0) {
-        resolve({stdout, stderr})
-        return
-      }
-
-      reject(new Error(`Command failed (${command} ${args.join(" ")}), exit code ${code}, stderr: ${stderr}`))
-    })
-  })
-}
 
 /**
  * @returns {{info: Function, warning: Function, error: Function}}
@@ -151,7 +116,8 @@ integrationDescribe("Installation Integration", () => {
       const checkoutPath = path.join(tempRoot, `impresscms-${version.replace(".", "_")}`)
       const mysql = await startMysqlContainer()
       const actionsCore = createActionsCoreStub()
-      const gitService = new GitService({run: runCommand}, ImpresscmsRepositoryInfo.url)
+      const commandRunnerService = new CommandRunnerService(actionsCore)
+      const gitService = new GitService(commandRunnerService, ImpresscmsRepositoryInfo.url)
 
       try {
         await gitService.checkoutImpresscmsReference(checkoutPath, targetTag)
@@ -186,7 +152,8 @@ integrationDescribe("Installation Integration", () => {
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
     const mysql = await startMysqlContainer()
     const actionsCore = createActionsCoreStub()
-    const gitService = new GitService({run: runCommand}, ImpresscmsRepositoryInfo.url)
+    const commandRunnerService = new CommandRunnerService(actionsCore)
+    const gitService = new GitService(commandRunnerService, ImpresscmsRepositoryInfo.url)
     const tngRef = INTEGRATION_IMPRESSCMS_REF || "TNG"
 
     try {
@@ -194,7 +161,7 @@ integrationDescribe("Installation Integration", () => {
 
       const strategy = new TngStrategy(
         new FilePermissionService(actionsCore),
-        new CommandRunnerService(actionsCore),
+        commandRunnerService,
         new ImpressVersionService(actionsCore)
       )
       const inputDto = createInputDto("2.0", mysql.getHost(), mysql.getMappedPort(3306))
