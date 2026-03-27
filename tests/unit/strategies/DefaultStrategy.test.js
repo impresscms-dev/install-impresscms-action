@@ -1,0 +1,159 @@
+import {jest} from "@jest/globals"
+
+const loadStrategy = async ({existsSync = jest.fn(), mkdirSync = jest.fn()} = {}) => {
+  jest.resetModules()
+  jest.unstable_mockModule("node:fs", () => ({
+    existsSync,
+    mkdirSync
+  }))
+
+  const {default: DefaultStrategy} = await import("../../../src/strategies/DefaultStrategy.js")
+  return {DefaultStrategy, existsSync, mkdirSync}
+}
+
+const createInputDto = () => ({
+  appKey: "fixed-key",
+  language: "english",
+  url: "http://localhost",
+  databaseType: "pdo.mysql",
+  databaseHost: "127.0.0.1",
+  databaseUser: "user",
+  databasePassword: "pass",
+  databaseName: "icms",
+  databaseCharset: "utf8",
+  databaseCollation: "utf8_general_ci",
+  databasePrefix: "icms",
+  adminName: "admin",
+  adminLogin: "admin",
+  adminPass: "secret",
+  adminEmail: "admin@example.test"
+})
+
+describe("DefaultStrategy", () => {
+  test("isSupported returns true for legacy structure without composer", async () => {
+    const existsSync = jest.fn(filePath =>
+      String(filePath).includes("htdocs\\install\\page_langselect.php") ||
+      String(filePath).includes("htdocs\\mainfile.php")
+    )
+    const {DefaultStrategy} = await loadStrategy({existsSync})
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn()},
+      {build: jest.fn()},
+      {build: jest.fn()}
+    )
+
+    await expect(strategy.isSupported({}, "/repo")).resolves.toBe(true)
+  })
+
+  test("isSupported returns false when composer.json exists", async () => {
+    const existsSync = jest.fn(filePath =>
+      String(filePath).includes("htdocs\\install\\page_langselect.php") ||
+      String(filePath).includes("htdocs\\mainfile.php") ||
+      String(filePath).includes("composer.json")
+    )
+    const {DefaultStrategy} = await loadStrategy({existsSync})
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn()},
+      {build: jest.fn()},
+      {build: jest.fn()}
+    )
+
+    await expect(strategy.isSupported({}, "/repo")).resolves.toBe(false)
+  })
+
+  test("startApacheContainer starts built container with mapped php version", async () => {
+    const apacheContainer = {start: jest.fn().mockResolvedValue(undefined)}
+    const apacheContainerFactory = {build: jest.fn().mockReturnValue(apacheContainer)}
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0")},
+      apacheContainerFactory,
+      {build: jest.fn()}
+    )
+
+    const paths = {
+      projectPath: "/repo",
+      htdocsPath: "/repo/htdocs",
+      trustPath: "/repo/trust_path",
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path"
+    }
+    const result = await strategy.startApacheContainer(paths)
+
+    expect(apacheContainerFactory.build).toHaveBeenCalledWith({
+      phpVersion: "8.3",
+      htdocsPath: "/repo/htdocs",
+      trustPath: "/repo/trust_path",
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path"
+    })
+    expect(apacheContainer.start).toHaveBeenCalledTimes(1)
+    expect(result).toBe(apacheContainer)
+  })
+
+  test("runInstaller executes installer flow and stops client", async () => {
+    const networkService = {waitForServer: jest.fn().mockResolvedValue(undefined)}
+    const client = {
+      start: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn().mockResolvedValue({}),
+      stop: jest.fn().mockResolvedValue(undefined)
+    }
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      networkService,
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn()},
+      {build: jest.fn()},
+      {build: jest.fn().mockReturnValue(client)}
+    )
+
+    await strategy.runInstaller("http://localhost:8080", {
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path"
+    }, createInputDto())
+
+    expect(networkService.waitForServer).toHaveBeenCalledWith("http://localhost:8080/install/index.php")
+    expect(client.start).toHaveBeenCalledTimes(1)
+    expect(client.send).toHaveBeenCalled()
+    expect(client.stop).toHaveBeenCalledTimes(1)
+  })
+
+  test("apply returns results dto and always stops apache server", async () => {
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn()},
+      {build: jest.fn()},
+      {build: jest.fn()}
+    )
+    const apacheServer = {
+      baseUrl: "http://localhost:8080",
+      stop: jest.fn().mockResolvedValue(undefined)
+    }
+
+    jest.spyOn(strategy, "resolveLegacyPaths").mockReturnValue({
+      trustPath: "/repo/trust_path"
+    })
+    jest.spyOn(strategy, "ensureTrustPath").mockImplementation(() => {})
+    jest.spyOn(strategy, "applyLegacyPermissions").mockResolvedValue(undefined)
+    jest.spyOn(strategy, "startApacheContainer").mockResolvedValue(apacheServer)
+    jest.spyOn(strategy, "runInstaller").mockResolvedValue(undefined)
+
+    const result = await strategy.apply(createInputDto(), "/repo")
+
+    expect(result).toMatchObject({
+      appKey: "fixed-key",
+      usesComposer: false,
+      usesPhoenix: false
+    })
+    expect(result.appKey).toBe("fixed-key")
+    expect(apacheServer.stop).toHaveBeenCalledTimes(1)
+  })
+})
