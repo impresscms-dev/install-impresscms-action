@@ -1,6 +1,5 @@
 import {existsSync} from "node:fs"
 import path from "node:path"
-import process from "node:process"
 import {spawn} from "node:child_process"
 import {fileURLToPath} from "node:url"
 import * as core from "@actions/core"
@@ -22,7 +21,10 @@ const currentDirPath = path.dirname(currentFilePath)
  * @param {string} fallback Value used when input is not set.
  * @returns {string}
  */
-const getInput = (name, fallback = "") => process.env[`INPUT_${name.toUpperCase()}`] ?? fallback
+const getInput = (name, fallback = "") => {
+  const value = core.getInput(name)
+  return value === "" ? fallback : value
+}
 
 /**
  * Execute a command and stream output to action logs.
@@ -44,13 +46,19 @@ const runCommand = async (command, args, options = {}) => await new Promise((res
   child.stdout.on("data", data => {
     const chunk = data.toString()
     stdout += chunk
-    process.stdout.write(chunk)
+    const message = chunk.trim()
+    if (message) {
+      core.info(message)
+    }
   })
 
   child.stderr.on("data", data => {
     const chunk = data.toString()
     stderr += chunk
-    process.stderr.write(chunk)
+    const message = chunk.trim()
+    if (message) {
+      core.error(message)
+    }
   })
 
   child.on("error", reject)
@@ -100,6 +108,5 @@ const run = async () => {
 }
 
 run().catch(error => {
-  process.stderr.write(`${error.message}\n`)
-  process.exitCode = 1
+  core.setFailed(error.message)
 })
