@@ -21,7 +21,7 @@ const loadService = async ({
     }
   }))
 
-  const {default: FilePermissionService} = await import("../../src/Services/FilePermissionService.js")
+  const {default: FilePermissionService} = await import("../../../src/Services/FilePermissionService.js")
   return {FilePermissionService, existsSync, statSync, readdirSync, chmodSync, warning}
 }
 

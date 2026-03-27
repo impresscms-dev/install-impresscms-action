@@ -60,7 +60,7 @@ const loadService = async ({spawnMock, infoMock, errorMock}) => {
     spawn: spawnMock
   }))
 
-  const {default: CommandRunnerService} = await import("../../src/Services/CommandRunnerService.js")
+  const {default: CommandRunnerService} = await import("../../../src/Services/CommandRunnerService.js")
   return new CommandRunnerService({
     info: infoMock,
     error: errorMock

@@ -1,7 +1,7 @@
 import {jest} from "@jest/globals"
 import net from "node:net"
-import NetworkService from "../../src/Services/NetworkService.js"
-import PhpServerNotReadyError from "../../src/Errors/PhpServerNotReadyError.js"
+import NetworkService from "../../../src/Services/NetworkService.js"
+import PhpServerNotReadyError from "../../../src/Errors/PhpServerNotReadyError.js"
 
 describe("NetworkService", () => {
   let networkService

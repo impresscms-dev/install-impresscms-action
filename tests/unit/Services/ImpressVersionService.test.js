@@ -10,7 +10,7 @@ const loadService = async ({
     readFileSync
   }))
 
-  const {default: ImpressVersionService} = await import("../../src/Services/ImpressVersionService.js")
+  const {default: ImpressVersionService} = await import("../../../src/Services/ImpressVersionService.js")
   return {ImpressVersionService, warning}
 }
 
