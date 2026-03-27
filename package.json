@@ -16,6 +16,7 @@
     "pack": "node scripts/pack.js"
   },
   "devDependencies": {
+    "@vercel/ncc": "^0.38.4",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
     "jest": "^30.3.0"

@@ -5,6 +5,8 @@
 
 GitHub action to install [ImpressCMS](https://github.com/ImpressCMS/impresscms).
 
+This action is shipped as a pre-bundled `dist/` artifact with runtime dependencies included, so GitHub Actions runners do not need to run `npm install` before using it.
+
 This action auto-detects supported installation strategies. Currently it supports:
 
 - TNG-style installs that use [Composer](https://getcomposer.org) and [Phoenix](https://github.com/lulco/phoenix)

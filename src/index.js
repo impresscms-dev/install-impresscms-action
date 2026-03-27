@@ -1,19 +1,13 @@
 import {existsSync} from "node:fs"
 import path from "node:path"
-import {fileURLToPath} from "node:url"
-import {ContainerBuilder, JsFileLoader} from "node-dependency-injection"
 import ResultsDto from "./DTO/ResultsDto.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
 import NoSupportedStrategyError from "./Errors/NoSupportedStrategyError.js"
-
-const currentFilePath = fileURLToPath(import.meta.url)
-const currentDirPath = path.dirname(currentFilePath)
+import buildContainer from "./Config/Container.js"
 
 const run = async () => {
-  const container = new ContainerBuilder()
-  const loader = new JsFileLoader(container)
-  await loader.load(path.join(currentDirPath, "Config", "Container.js"))
+  const container = buildContainer()
 
   /** @type {import("./Services/ActionsCoreService.js").default} */
   const actionsCore = container.get("service.actions_core")
