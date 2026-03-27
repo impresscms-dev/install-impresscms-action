@@ -4,8 +4,7 @@ import os from "node:os"
 import {jest} from "@jest/globals"
 import {GenericContainer, Wait} from "testcontainers"
 import RequirementsInfo from "../../src/Config/RequirementsInfo.js"
-import LegacyTagByVersion from "../../src/Config/LegacyTagByVersion.js"
-import ImpresscmsRepositoryInfo from "../../src/Config/ImpresscmsRepositoryInfo.js"
+import ImpressCMSRepository from "../../src/Config/ImpressCMSRepository.js"
 import InputDto from "../../src/DTO/InputDto.js"
 import CommandRunnerService from "../../src/Services/CommandRunnerService.js"
 import CommandExistenceService from "../../src/Services/CommandExistenceService.js"
@@ -31,7 +30,7 @@ const HAS_DOCKER = commandExistenceService.exists("docker")
 const integrationDescribe = HAS_DOCKER ? describe : describe.skip
 const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
   ? REQUIREMENTS_VERSIONS
-  : (LegacyTagByVersion[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
+  : (ImpressCMSRepository.legacyTagsByVersion[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
 const runTngVariant = INTEGRATION_VARIANT === "all" || INTEGRATION_VARIANT === "tng"
 
 /**
@@ -103,7 +102,7 @@ integrationDescribe("Installation Integration", () => {
         return [version, INTEGRATION_IMPRESSCMS_REF]
       }
 
-      return [version, LegacyTagByVersion[version] || ""]
+      return [version, ImpressCMSRepository.legacyTagsByVersion[version] || ""]
     }))
   })
 
@@ -117,7 +116,7 @@ integrationDescribe("Installation Integration", () => {
       const mysql = await startMysqlContainer()
       const actionsCore = createActionsCoreStub()
       const commandRunnerService = new CommandRunnerService(actionsCore)
-      const gitService = new GitService(commandRunnerService, ImpresscmsRepositoryInfo.url)
+      const gitService = new GitService(commandRunnerService, ImpressCMSRepository.url)
 
       try {
         await gitService.checkoutImpresscmsReference(checkoutPath, targetTag)
@@ -153,7 +152,7 @@ integrationDescribe("Installation Integration", () => {
     const mysql = await startMysqlContainer()
     const actionsCore = createActionsCoreStub()
     const commandRunnerService = new CommandRunnerService(actionsCore)
-    const gitService = new GitService(commandRunnerService, ImpresscmsRepositoryInfo.url)
+    const gitService = new GitService(commandRunnerService, ImpressCMSRepository.url)
     const tngRef = INTEGRATION_IMPRESSCMS_REF || "TNG"
 
     try {
