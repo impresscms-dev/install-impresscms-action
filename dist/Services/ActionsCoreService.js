@@ -41,4 +41,12 @@ export default class ActionsCoreService {
   error(message) {
     core.error(message)
   }
+
+  /**
+   * @param {string} message
+   * @returns {void}
+   */
+  warning(message) {
+    core.warning(message)
+  }
 }

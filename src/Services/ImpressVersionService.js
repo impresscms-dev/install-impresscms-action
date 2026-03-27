@@ -4,6 +4,13 @@ import ImpressVersionNotDetectedError from "../Errors/ImpressVersionNotDetectedE
 
 export default class ImpressVersionService {
   /**
+   * @param {import("./ActionsCoreService.js").default} actionsCore
+   */
+  constructor(actionsCore) {
+    this.actionsCore = actionsCore
+  }
+
+  /**
    * @param {string} projectPath
    * @returns {string}
    */
@@ -142,7 +149,8 @@ export default class ImpressVersionService {
     try {
       const contents = readFileSync(filePath, {encoding: "utf8"})
       return JSON.parse(contents)
-    } catch {
+    } catch (error) {
+      this.actionsCore.warning(`Unable to parse JSON file ${filePath}: ${error.message}`)
       return null
     }
   }

@@ -3,6 +3,13 @@ import PhpServerNotReadyError from "../Errors/PhpServerNotReadyError.js"
 
 export default class NetworkService {
   /**
+   * @param {import("./ActionsCoreService.js").default} actionsCore
+   */
+  constructor(actionsCore) {
+    this.actionsCore = actionsCore
+  }
+
+  /**
    * @returns {Promise<number>}
    */
   async getFreePort() {
@@ -32,8 +39,8 @@ export default class NetworkService {
         if (response.status >= 200 && response.status < 500) {
           return
         }
-      } catch {
-        // retry
+      } catch (error) {
+        this.actionsCore.warning(`waitForServer attempt ${i + 1} failed for ${url}: ${error.message}`)
       }
       await new Promise(resolve => setTimeout(resolve, waitMs))
     }

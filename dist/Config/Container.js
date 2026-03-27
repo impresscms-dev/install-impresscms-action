@@ -3,7 +3,10 @@ export const services = {
     class: "../Services/ActionsCoreService.js"
   },
   "service.file_permission": {
-    class: "../Services/FilePermissionService.js"
+    class: "../Services/FilePermissionService.js",
+    arguments: [
+      "@service.actions_core"
+    ]
   },
   "service.command_runner": {
     class: "../Services/CommandRunnerService.js",
@@ -12,10 +15,16 @@ export const services = {
     ]
   },
   "service.network": {
-    class: "../Services/NetworkService.js"
+    class: "../Services/NetworkService.js",
+    arguments: [
+      "@service.actions_core"
+    ]
   },
   "service.impress_version": {
-    class: "../Services/ImpressVersionService.js"
+    class: "../Services/ImpressVersionService.js",
+    arguments: [
+      "@service.actions_core"
+    ]
   },
   "factory.apache_container": {
     class: "../Factories/ApacheContainerFactory.js"

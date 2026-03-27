@@ -5,9 +5,11 @@ import PhpServerNotReadyError from "../../src/Errors/PhpServerNotReadyError.js"
 
 describe("NetworkService", () => {
   let networkService
+  let warning
 
   beforeEach(() => {
-    networkService = new NetworkService()
+    warning = jest.fn()
+    networkService = new NetworkService({warning})
   })
 
   afterEach(() => {
@@ -46,5 +48,6 @@ describe("NetworkService", () => {
 
     await expect(networkService.waitForServer("http://mocked.local", 3, 1)).rejects.toBeInstanceOf(PhpServerNotReadyError)
     expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(warning).toHaveBeenCalledTimes(3)
   })
 })
