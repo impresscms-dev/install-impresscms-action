@@ -1,0 +1,40 @@
+export const services = {
+  "app.context": {
+    synthetic: true
+  },
+  "service.file_permission": {
+    class: "../Services/FilePermissionService.js"
+  },
+  "service.network": {
+    class: "../Services/NetworkService.js"
+  },
+  "service.impress_version": {
+    class: "../Services/ImpressVersionService.js"
+  },
+  "factory.apache_container": {
+    class: "../Factories/ApacheContainerFactory.js"
+  },
+  "strategy.tng": {
+    class: "../strategies/TngStrategy.js",
+    arguments: [
+      "@app.context",
+      "@service.file_permission"
+    ],
+    tags: [
+      {name: "strategy"}
+    ]
+  },
+  "strategy.default": {
+    class: "../strategies/DefaultStrategy.js",
+    arguments: [
+      "@app.context",
+      "@service.network",
+      "@service.file_permission",
+      "@service.impress_version",
+      "@factory.apache_container"
+    ],
+    tags: [
+      {name: "strategy"}
+    ]
+  }
+}
