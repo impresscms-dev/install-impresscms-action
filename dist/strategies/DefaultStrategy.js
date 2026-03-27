@@ -18,15 +18,15 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
    * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
    * @param {import("../Factories/ApacheContainerFactory.js").default} apacheContainerFactory
-   * @param {import("../Services/PlaywrightInstallerClientService.js").default} playwrightInstallerClientService
+   * @param {import("../Factories/PlaywrightInstallerClientFactory.js").default} playwrightInstallerClientFactory
    */
-  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory, playwrightInstallerClientService) {
+  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory, playwrightInstallerClientFactory) {
     super()
     this.networkService = networkService
     this.filePermissionService = filePermissionService
     this.impressVersionService = impressVersionService
     this.apacheContainerFactory = apacheContainerFactory
-    this.playwrightInstallerClientService = playwrightInstallerClientService
+    this.playwrightInstallerClientFactory = playwrightInstallerClientFactory
   }
 
   /**
@@ -138,7 +138,8 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   async runInstaller(baseUrl, paths, inputDto) {
     await this.networkService.waitForServer(`${baseUrl}/install/index.php`)
-    const client = await this.playwrightInstallerClientService.create(baseUrl)
+    const client = this.playwrightInstallerClientFactory.build(baseUrl)
+    await client.start()
 
     try {
       await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
@@ -154,7 +155,7 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_modulesinstall.php", {method: "POST", formData: {mod: "0"}})
       await client.send("/install/page_end.php")
     } finally {
-      await client.dispose()
+      await client.stop()
     }
   }
 

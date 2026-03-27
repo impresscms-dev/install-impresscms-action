@@ -26,11 +26,11 @@ export const services = {
       "@service.actions_core"
     ]
   },
-  "service.playwright_installer_client": {
-    class: "../Services/PlaywrightInstallerClientService.js"
-  },
   "factory.apache_container": {
     class: "../Factories/ApacheContainerFactory.js"
+  },
+  "factory.playwright_installer_client": {
+    class: "../Factories/PlaywrightInstallerClientFactory.js"
   },
   "strategy.tng": {
     class: "../strategies/TngStrategy.js",
@@ -49,7 +49,7 @@ export const services = {
       "@service.file_permission",
       "@service.impress_version",
       "@factory.apache_container",
-      "@service.playwright_installer_client"
+      "@factory.playwright_installer_client"
     ],
     tags: [
       {name: "strategy"}
