@@ -78,6 +78,8 @@ inputs:
 outputs:
   app_key:
     description: Generated application key
+  detected_impresscms_version:
+    description: Detected ImpressCMS version in X.Y format
   uses_composer:
     description: Returns if current ImpressCMS version uses Composer for package management
   uses_phoenix:

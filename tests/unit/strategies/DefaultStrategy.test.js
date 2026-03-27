@@ -39,7 +39,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn()}
     )
@@ -57,7 +57,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn()}
     )
@@ -84,7 +84,7 @@ describe("DefaultStrategy", () => {
       containerRootPath: "/var/www/html",
       containerTrustPath: "/var/www/trust_path"
     }
-    const result = await strategy.startApacheContainer(paths)
+    const result = await strategy.startApacheContainer(paths, "2.0")
 
     expect(apacheContainerFactory.build).toHaveBeenCalledWith({
       phpVersion: "8.3",
@@ -108,7 +108,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       networkService,
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn().mockReturnValue(client)}
     )
@@ -129,7 +129,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn()}
     )
@@ -148,12 +148,10 @@ describe("DefaultStrategy", () => {
 
     const result = await strategy.apply(createInputDto(), "/repo")
 
-    expect(result).toMatchObject({
-      appKey: "fixed-key",
-      usesComposer: false,
-      usesPhoenix: false
-    })
     expect(result.appKey).toBe("fixed-key")
+    expect(result.detectedImpresscmsVersion).toBe("2.0")
+    expect(result.usesComposer).toBe(false)
+    expect(result.usesPhoenix).toBe(false)
     expect(apacheServer.stop).toHaveBeenCalledTimes(1)
   })
 })

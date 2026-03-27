@@ -42,7 +42,8 @@ export const services = {
     class: "../strategies/TngStrategy.js",
     arguments: [
       "@service.file_permission",
-      "@service.command_runner"
+      "@service.command_runner",
+      "@service.impress_version"
     ],
     tags: [
       {name: "strategy"}

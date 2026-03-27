@@ -48,10 +48,11 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @returns {Promise<ResultsDto>}
    */
   async apply(inputDto, projectPath) {
+    const detectedImpresscmsVersion = this.impressVersionService.detect(projectPath)
     const paths = this.resolveLegacyPaths(projectPath)
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
-    const apacheServer = await this.startApacheContainer(paths)
+    const apacheServer = await this.startApacheContainer(paths, detectedImpresscmsVersion)
 
     try {
       await this.runInstaller(apacheServer.baseUrl, paths, inputDto)
@@ -61,6 +62,7 @@ export default class DefaultStrategy extends AbstractStrategy {
 
     return new ResultsDto({
       appKey: inputDto.appKey,
+      detectedImpresscmsVersion,
       usesComposer: false,
       usesPhoenix: false
     })
@@ -108,13 +110,13 @@ export default class DefaultStrategy extends AbstractStrategy {
 
   /**
    * @param {{projectPath: string, htdocsPath: string, trustPath: string, containerRootPath: string, containerTrustPath: string}} paths
+   * @param {string} detectedImpresscmsVersion
    * @returns {Promise<import("../Infrastructure/ApacheContainerInstance.js").default>}
    */
-  async startApacheContainer(paths) {
-    const impressVersion = this.impressVersionService.detect(paths.projectPath)
-    const phpRequirements = RequirementsInfo[impressVersion]
+  async startApacheContainer(paths, detectedImpresscmsVersion) {
+    const phpRequirements = RequirementsInfo[detectedImpresscmsVersion]
     if (!phpRequirements) {
-      throw new ImpressVersionRequirementsMissingError(impressVersion)
+      throw new ImpressVersionRequirementsMissingError(detectedImpresscmsVersion)
     }
 
     const apacheContainer = this.apacheContainerFactory.build({

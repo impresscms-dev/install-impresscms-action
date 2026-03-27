@@ -8,11 +8,13 @@ export default class TngStrategy extends AbstractStrategy {
   /**
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
    * @param {import("../Services/CommandRunnerService.js").default} commandRunnerService
+   * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
    */
-  constructor(filePermissionService, commandRunnerService) {
+  constructor(filePermissionService, commandRunnerService, impressVersionService) {
     super()
     this.filePermissionService = filePermissionService
     this.commandRunnerService = commandRunnerService
+    this.impressVersionService = impressVersionService
   }
 
   /**
@@ -33,6 +35,7 @@ export default class TngStrategy extends AbstractStrategy {
    * @returns {Promise<ResultsDto>}
    */
   async apply(inputDto, projectPath) {
+    const detectedImpresscmsVersion = this.detectImpressVersion(projectPath)
     await this.installComposerDependencies(projectPath)
     const appKey = await this.resolveAppKey(inputDto.appKey, projectPath)
     this.ensureWritableFolders(projectPath)
@@ -40,9 +43,22 @@ export default class TngStrategy extends AbstractStrategy {
 
     return new ResultsDto({
       appKey,
+      detectedImpresscmsVersion,
       usesComposer: true,
       usesPhoenix: true
     })
+  }
+
+  /**
+   * @param {string} projectPath
+   * @returns {string}
+   */
+  detectImpressVersion(projectPath) {
+    try {
+      return this.impressVersionService.detect(projectPath)
+    } catch {
+      return ""
+    }
   }
 
   /**
