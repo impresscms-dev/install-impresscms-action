@@ -1,4 +1,4 @@
-import {existsSync, mkdirSync, readFileSync} from "node:fs"
+import {existsSync, mkdirSync} from "node:fs"
 import path from "node:path"
 import {randomBytes} from "node:crypto"
 import {request as playwrightRequest} from "playwright"
@@ -6,10 +6,10 @@ import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
 import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
 import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
-import ImpressVersionNotDetectedError from "../Errors/ImpressVersionNotDetectedError.js"
 import ImpressVersionRequirementsMissingError from "../Errors/ImpressVersionRequirementsMissingError.js"
 import NetworkService from "../Services/NetworkService.js"
 import FilePermissionService from "../Services/FilePermissionService.js"
+import ImpressVersionService from "../Services/ImpressVersionService.js"
 import ApacheContainerInstance from "../Infrastructure/ApacheContainerInstance.js"
 import RequirementsInfo from "../Config/RequirementsInfo.js"
 
@@ -101,7 +101,7 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @returns {Promise<ApacheContainerInstance>}
    */
   async startApacheContainer(paths) {
-    const impressVersion = this.detectImpressVersion(paths.projectPath)
+    const impressVersion = ImpressVersionService.detect(paths.projectPath)
     const phpRequirements = RequirementsInfo[impressVersion]
     if (!phpRequirements) {
       throw new ImpressVersionRequirementsMissingError(impressVersion)
@@ -114,35 +114,6 @@ export default class DefaultStrategy extends AbstractStrategy {
       containerRootPath: paths.containerRootPath,
       containerTrustPath: paths.containerTrustPath
     })
-  }
-
-  /**
-   * @param {string} projectPath
-   * @returns {string}
-   */
-  detectImpressVersion(projectPath) {
-    const versionFileCandidates = [
-      path.join(projectPath, "htdocs", "include", "version.php"),
-      path.join(projectPath, "include", "version.php")
-    ]
-
-    for (const filePath of versionFileCandidates) {
-      if (!existsSync(filePath)) {
-        continue
-      }
-
-      const contents = readFileSync(filePath, {encoding: "utf8"})
-      const fullVersionMatch = contents.match(/ImpressCMS\s+(\d+\.\d+(?:\.\d+)?)/i)
-      if (fullVersionMatch) {
-        const [, version] = fullVersionMatch
-        const [, major, minor] = version.match(/(\d+)\.(\d+)/) ?? []
-        if (major && minor) {
-          return `${major}.${minor}`
-        }
-      }
-    }
-
-    throw new ImpressVersionNotDetectedError()
   }
 
   /**
