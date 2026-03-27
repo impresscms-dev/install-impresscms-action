@@ -54,7 +54,7 @@ export default class DefaultStrategy extends AbstractStrategy {
   async apply(inputDto, projectPath) {
     const detectedImpresscmsVersion = this.impressVersionService.detect(projectPath)
     const requirementsVersion = this.impressVersionService.toMajorMinor(detectedImpresscmsVersion)
-    const installerDatabaseHost = this.resolveInstallerDatabaseHost(inputDto.databaseHost)
+    const installerDatabaseHost = this.resolveInstallerDatabaseHost(inputDto)
     const paths = this.resolveLegacyPaths(projectPath)
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
@@ -185,10 +185,15 @@ export default class DefaultStrategy extends AbstractStrategy {
   }
 
   /**
-   * @param {string} databaseHost
+   * @param {import("../DTO/InputDto.js").default} inputDto
    * @returns {string}
    */
-  resolveInstallerDatabaseHost(databaseHost) {
+  resolveInstallerDatabaseHost(inputDto) {
+    if (inputDto.databaseHostInContainer) {
+      return inputDto.databaseHostInContainer
+    }
+
+    const databaseHost = inputDto.databaseHost
     if (installerLocalHosts.has(databaseHost)) {
       return installerHostAlias
     }

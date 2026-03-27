@@ -69,6 +69,7 @@ This action supports such arguments (used in `with` keyword):
 | database_type | No       | pdo.mysql                    | Database type     |
 | database_name | No       | icms                         | Database name     |
 | database_host | No       | 127.0.0.1                    | Database host     |
+| database_host_in_container | No       |                              | Database host visible from inside installer container. If set, overrides automatic localhost mapping     |
 | database_user | Yes      |                              | Database user     |
 | database_password | No       |                              | Database password |
 | database_charset | No       | utf8                         | Charset used for database     |

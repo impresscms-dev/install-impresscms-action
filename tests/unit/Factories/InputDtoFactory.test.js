@@ -7,6 +7,7 @@ describe("InputDtoFactory", () => {
       url: "http://example.test",
       database_type: "pdo.pgsql",
       database_host: "db.local",
+      database_host_in_container: "db-container.local",
       database_user: "user",
       database_password: "pass",
       database_name: "dbname",
@@ -33,6 +34,7 @@ describe("InputDtoFactory", () => {
     expect(inputDto.url).toBe("http://example.test")
     expect(inputDto.databaseType).toBe("pdo.pgsql")
     expect(inputDto.databaseHost).toBe("db.local")
+    expect(inputDto.databaseHostInContainer).toBe("db-container.local")
     expect(inputDto.databaseUser).toBe("user")
     expect(inputDto.databasePassword).toBe("pass")
     expect(inputDto.databaseName).toBe("dbname")
@@ -60,6 +62,7 @@ describe("InputDtoFactory", () => {
     expect(inputDto.url).toBe("http://localhost")
     expect(inputDto.databaseType).toBe("pdo.mysql")
     expect(inputDto.databaseHost).toBe("127.0.0.1")
+    expect(inputDto.databaseHostInContainer).toBe("")
     expect(inputDto.databaseName).toBe("icms")
     expect(inputDto.databasePort).toBe("3306")
     expect(inputDto.adminName).toBe("icms")

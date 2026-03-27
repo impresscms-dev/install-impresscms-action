@@ -6,6 +6,7 @@ export default class InputDto {
    * @param {string} [params.url]
    * @param {string} [params.databaseType]
    * @param {string} [params.databaseHost]
+   * @param {string} [params.databaseHostInContainer]
    * @param {string} [params.databaseUser]
    * @param {string} [params.databasePassword]
    * @param {string} [params.databaseName]
@@ -25,6 +26,7 @@ export default class InputDto {
     url = "http://localhost",
     databaseType = "pdo.mysql",
     databaseHost = "127.0.0.1",
+    databaseHostInContainer = "",
     databaseUser = "",
     databasePassword = "",
     databaseName = "icms",
@@ -44,6 +46,7 @@ export default class InputDto {
       url,
       databaseType,
       databaseHost,
+      databaseHostInContainer,
       databaseUser,
       databasePassword,
       databaseName,
@@ -80,6 +83,13 @@ export default class InputDto {
    */
   get databaseHost() {
     return this.#data.databaseHost
+  }
+
+  /**
+   * @returns {string}
+   */
+  get databaseHostInContainer() {
+    return this.#data.databaseHostInContainer
   }
 
   /**

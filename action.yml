@@ -19,6 +19,10 @@ inputs:
     description: "Database host"
     default: 127.0.0.1
     required: false
+  database_host_in_container:
+    description: "Database host visible from inside installer container. Overrides automatic localhost mapping when set"
+    default: ""
+    required: false
   database_user:
     description: "Database user"
     required: true

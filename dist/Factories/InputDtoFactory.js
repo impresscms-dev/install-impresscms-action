@@ -16,6 +16,7 @@ export default class InputDtoFactory {
       url: this.actionsCore.getInput("url") || "http://localhost",
       databaseType: this.actionsCore.getInput("database_type") || "pdo.mysql",
       databaseHost: this.actionsCore.getInput("database_host") || "127.0.0.1",
+      databaseHostInContainer: this.actionsCore.getInput("database_host_in_container") || "",
       databaseUser: this.actionsCore.getInput("database_user") || "",
       databasePassword: this.actionsCore.getInput("database_password") || "",
       databaseName: this.actionsCore.getInput("database_name") || "icms",

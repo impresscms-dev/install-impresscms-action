@@ -17,6 +17,7 @@ const createInputDto = () => ({
   url: "http://localhost",
   databaseType: "pdo.mysql",
   databaseHost: "127.0.0.1",
+  databaseHostInContainer: "",
   databaseUser: "user",
   databasePassword: "pass",
   databaseName: "icms",
@@ -209,9 +210,9 @@ describe("DefaultStrategy", () => {
       {uploadFailureArtifacts: jest.fn()}
     )
 
-    expect(strategy.resolveInstallerDatabaseHost("localhost")).toBe("host.docker.internal")
-    expect(strategy.resolveInstallerDatabaseHost("127.0.0.1")).toBe("host.docker.internal")
-    expect(strategy.resolveInstallerDatabaseHost("::1")).toBe("host.docker.internal")
+    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "localhost", databaseHostInContainer: ""})).toBe("host.docker.internal")
+    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "127.0.0.1", databaseHostInContainer: ""})).toBe("host.docker.internal")
+    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "::1", databaseHostInContainer: ""})).toBe("host.docker.internal")
   })
 
   test("resolveInstallerDatabaseHost keeps non-local host unchanged", async () => {
@@ -225,6 +226,23 @@ describe("DefaultStrategy", () => {
       {uploadFailureArtifacts: jest.fn()}
     )
 
-    expect(strategy.resolveInstallerDatabaseHost("mysql")).toBe("mysql")
+    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "mysql", databaseHostInContainer: ""})).toBe("mysql")
+  })
+
+  test("resolveInstallerDatabaseHost prefers explicit container override", async () => {
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
+      {build: jest.fn()},
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
+    )
+
+    expect(strategy.resolveInstallerDatabaseHost({
+      databaseHost: "127.0.0.1",
+      databaseHostInContainer: "mysql.internal"
+    })).toBe("mysql.internal")
   })
 })
