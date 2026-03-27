@@ -116,7 +116,7 @@ jobs:
             php_version: "8.3"
             composer_tool: "composer:v2"
           - variant: "tng"
-            impresscms_ref: "tng"
+            impresscms_ref: "TNG"
             php_version: "8.0"
             composer_tool: "composer:v2"
     needs:

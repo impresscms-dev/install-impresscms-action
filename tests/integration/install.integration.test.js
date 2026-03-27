@@ -207,7 +207,7 @@ integrationDescribe("Installation Integration", () => {
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
     const mysql = await startMysqlContainer()
     const actionsCore = createActionsCoreStub()
-    const tngRef = INTEGRATION_IMPRESSCMS_REF || "tng"
+    const tngRef = INTEGRATION_IMPRESSCMS_REF || "TNG"
 
     try {
       await checkoutImpresscmsReference(checkoutPath, tngRef)
