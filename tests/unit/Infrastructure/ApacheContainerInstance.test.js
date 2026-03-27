@@ -72,6 +72,33 @@ describe("ApacheContainerInstance", () => {
     expect(instance.baseUrl).toBe("http://127.0.0.1:43123")
   })
 
+  test("starts container with default and custom extra hosts", async () => {
+    const {ApacheContainerInstance, withExtraHostsMock} = await loadInstance()
+    const instance = new ApacheContainerInstance({
+      phpVersion: "8.3",
+      htdocsPath: "/host/htdocs",
+      trustPath: "/host/trust_path",
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path",
+      extraHosts: [
+        {host: "mysql.local", ipAddress: "host-gateway"}
+      ]
+    })
+
+    await instance.start()
+
+    expect(withExtraHostsMock).toHaveBeenCalledWith([
+      {
+        host: "host.docker.internal",
+        ipAddress: "host-gateway"
+      },
+      {
+        host: "mysql.local",
+        ipAddress: "host-gateway"
+      }
+    ])
+  })
+
   test("does not start twice when already started", async () => {
     const {ApacheContainerInstance, startMock} = await loadInstance()
     const instance = new ApacheContainerInstance({

@@ -8,6 +8,7 @@ export default class ApacheContainerFactory {
    * @param {string} params.trustPath
    * @param {string} params.containerRootPath
    * @param {string} params.containerTrustPath
+   * @param {{host: string, ipAddress: string}[]} [params.extraHosts]
    * @returns {ApacheContainerInstance}
    */
   build({
@@ -15,14 +16,16 @@ export default class ApacheContainerFactory {
     htdocsPath,
     trustPath,
     containerRootPath,
-    containerTrustPath
+    containerTrustPath,
+    extraHosts = []
   }) {
     return new ApacheContainerInstance({
       phpVersion,
       htdocsPath,
       trustPath,
       containerRootPath,
-      containerTrustPath
+      containerTrustPath,
+      extraHosts
     })
   }
 }

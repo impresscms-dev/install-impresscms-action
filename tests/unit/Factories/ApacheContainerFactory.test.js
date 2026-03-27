@@ -29,7 +29,8 @@ describe("ApacheContainerFactory", () => {
       htdocsPath: "/h",
       trustPath: "/t",
       containerRootPath: "/r",
-      containerTrustPath: "/tr"
+      containerTrustPath: "/tr",
+      extraHosts: []
     })
     expect(instance.config.phpVersion).toBe("8.3")
   })

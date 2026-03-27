@@ -12,6 +12,7 @@ export default class ApacheContainerInstance {
    * @param {string} config.trustPath
    * @param {string} config.containerRootPath
    * @param {string} config.containerTrustPath
+   * @param {{host: string, ipAddress: string}[]} [config.extraHosts]
    */
   constructor(config) {
     this.#config = config
@@ -40,12 +41,7 @@ export default class ApacheContainerInstance {
         {source: this.#config.htdocsPath, target: this.#config.containerRootPath},
         {source: this.#config.trustPath, target: this.#config.containerTrustPath}
       ])
-      .withExtraHosts([
-        {
-          host: "host.docker.internal",
-          ipAddress: "host-gateway"
-        }
-      ])
+      .withExtraHosts(this.resolveExtraHosts())
       .withStartupTimeout(120000)
       .start()
 
@@ -63,5 +59,25 @@ export default class ApacheContainerInstance {
     await this.#container.stop()
     this.#container = null
     this.#baseUrl = ""
+  }
+
+  /**
+   * @returns {{host: string, ipAddress: string}[]}
+   */
+  resolveExtraHosts() {
+    const extraHosts = [
+      {
+        host: "host.docker.internal",
+        ipAddress: "host-gateway"
+      },
+      ...(this.#config.extraHosts ?? [])
+    ]
+
+    const dedupedExtraHosts = new Map()
+    for (const extraHost of extraHosts) {
+      dedupedExtraHosts.set(extraHost.host, extraHost)
+    }
+
+    return Array.from(dedupedExtraHosts.values())
   }
 }

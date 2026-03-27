@@ -1,14 +1,17 @@
 import {jest} from "@jest/globals"
 
-const loadStrategy = async ({existsSync = jest.fn(), mkdirSync = jest.fn()} = {}) => {
+const loadStrategy = async ({existsSync = jest.fn(), mkdirSync = jest.fn(), lookup = jest.fn()} = {}) => {
   jest.resetModules()
   jest.unstable_mockModule("node:fs", () => ({
     existsSync,
     mkdirSync
   }))
+  jest.unstable_mockModule("node:dns/promises", () => ({
+    lookup
+  }))
 
   const {default: DefaultStrategy} = await import("../../../src/strategies/DefaultStrategy.js")
-  return {DefaultStrategy, existsSync, mkdirSync}
+  return {DefaultStrategy, existsSync, mkdirSync, lookup}
 }
 
 const createInputDto = () => ({
@@ -17,7 +20,6 @@ const createInputDto = () => ({
   url: "http://localhost",
   databaseType: "pdo.mysql",
   databaseHost: "127.0.0.1",
-  databaseHostInContainer: "",
   databaseUser: "user",
   databasePassword: "pass",
   databaseName: "icms",
@@ -89,14 +91,15 @@ describe("DefaultStrategy", () => {
       containerRootPath: "/var/www/html",
       containerTrustPath: "/var/www/trust_path"
     }
-    const result = await strategy.startApacheContainer(paths, "2.0")
+    const result = await strategy.startApacheContainer(paths, "2.0", [])
 
     expect(apacheContainerFactory.build).toHaveBeenCalledWith({
       phpVersion: "8.3",
       htdocsPath: "/repo/htdocs",
       trustPath: "/repo/trust_path",
       containerRootPath: "/var/www/html",
-      containerTrustPath: "/var/www/trust_path"
+      containerTrustPath: "/var/www/trust_path",
+      extraHosts: []
     })
     expect(apacheContainer.start).toHaveBeenCalledTimes(1)
     expect(result).toBe(apacheContainer)
@@ -195,11 +198,12 @@ describe("DefaultStrategy", () => {
     expect(result.detectedImpresscmsVersion).toBe("2.0.0")
     expect(result.usesComposer).toBe(false)
     expect(result.usesPhoenix).toBe(false)
+    expect(strategy.startApacheContainer).toHaveBeenCalledWith({trustPath: "/repo/trust_path"}, "2.0", [])
     expect(strategy.runInstaller).toHaveBeenCalledWith("http://localhost:8080", {trustPath: "/repo/trust_path"}, inputDto, "host.docker.internal")
     expect(apacheServer.stop).toHaveBeenCalledTimes(1)
   })
 
-  test("resolveInstallerDatabaseHost maps localhost values to host alias", async () => {
+  test("resolveInstallerDatabaseTarget maps localhost values to host alias", async () => {
     const {DefaultStrategy} = await loadStrategy()
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
@@ -210,13 +214,22 @@ describe("DefaultStrategy", () => {
       {uploadFailureArtifacts: jest.fn()}
     )
 
-    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "localhost", databaseHostInContainer: ""})).toBe("host.docker.internal")
-    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "127.0.0.1", databaseHostInContainer: ""})).toBe("host.docker.internal")
-    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "::1", databaseHostInContainer: ""})).toBe("host.docker.internal")
+    await expect(strategy.resolveInstallerDatabaseTarget("localhost")).resolves.toEqual({
+      host: "host.docker.internal",
+      extraHosts: []
+    })
+    await expect(strategy.resolveInstallerDatabaseTarget("127.0.0.1")).resolves.toEqual({
+      host: "host.docker.internal",
+      extraHosts: []
+    })
+    await expect(strategy.resolveInstallerDatabaseTarget("::1")).resolves.toEqual({
+      host: "host.docker.internal",
+      extraHosts: []
+    })
   })
 
-  test("resolveInstallerDatabaseHost keeps non-local host unchanged", async () => {
-    const {DefaultStrategy} = await loadStrategy()
+  test("resolveInstallerDatabaseTarget keeps non-local host unchanged", async () => {
+    const {DefaultStrategy, lookup} = await loadStrategy({lookup: jest.fn().mockRejectedValue(new Error("dns fail"))})
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
@@ -226,11 +239,17 @@ describe("DefaultStrategy", () => {
       {uploadFailureArtifacts: jest.fn()}
     )
 
-    expect(strategy.resolveInstallerDatabaseHost({databaseHost: "mysql", databaseHostInContainer: ""})).toBe("mysql")
+    await expect(strategy.resolveInstallerDatabaseTarget("mysql")).resolves.toEqual({
+      host: "mysql",
+      extraHosts: []
+    })
+    expect(lookup).toHaveBeenCalledWith("mysql", {all: true})
   })
 
-  test("resolveInstallerDatabaseHost prefers explicit container override", async () => {
-    const {DefaultStrategy} = await loadStrategy()
+  test("resolveInstallerDatabaseTarget keeps same host and adds mapping when DNS resolves loopback", async () => {
+    const {DefaultStrategy, lookup} = await loadStrategy({
+      lookup: jest.fn().mockResolvedValue([{address: "127.0.0.1", family: 4}])
+    })
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
@@ -240,9 +259,15 @@ describe("DefaultStrategy", () => {
       {uploadFailureArtifacts: jest.fn()}
     )
 
-    expect(strategy.resolveInstallerDatabaseHost({
-      databaseHost: "127.0.0.1",
-      databaseHostInContainer: "mysql.internal"
-    })).toBe("mysql.internal")
+    await expect(strategy.resolveInstallerDatabaseTarget("mysql.local")).resolves.toEqual({
+      host: "mysql.local",
+      extraHosts: [
+        {
+          host: "mysql.local",
+          ipAddress: "host-gateway"
+        }
+      ]
+    })
+    expect(lookup).toHaveBeenCalledWith("mysql.local", {all: true})
   })
 })

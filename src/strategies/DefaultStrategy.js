@@ -1,6 +1,7 @@
 import {existsSync, mkdirSync} from "node:fs"
 import path from "node:path"
 import {randomBytes} from "node:crypto"
+import {lookup as dnsLookup} from "node:dns/promises"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
 import ImpressVersionRequirementsMissingError from "../Errors/ImpressVersionRequirementsMissingError.js"
@@ -13,6 +14,7 @@ import RequirementsInfo from "../Config/RequirementsInfo.js"
 const normalizePath = value => value.replaceAll("\\", "/")
 const installerLocalHosts = new Set(["localhost", "127.0.0.1", "::1"])
 const installerHostAlias = "host.docker.internal"
+const hostGatewayAddress = "host-gateway"
 
 export default class DefaultStrategy extends AbstractStrategy {
   /**
@@ -54,14 +56,14 @@ export default class DefaultStrategy extends AbstractStrategy {
   async apply(inputDto, projectPath) {
     const detectedImpresscmsVersion = this.impressVersionService.detect(projectPath)
     const requirementsVersion = this.impressVersionService.toMajorMinor(detectedImpresscmsVersion)
-    const installerDatabaseHost = this.resolveInstallerDatabaseHost(inputDto)
+    const installerDatabaseTarget = await this.resolveInstallerDatabaseTarget(inputDto.databaseHost)
     const paths = this.resolveLegacyPaths(projectPath)
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
-    const apacheServer = await this.startApacheContainer(paths, requirementsVersion)
+    const apacheServer = await this.startApacheContainer(paths, requirementsVersion, installerDatabaseTarget.extraHosts)
 
     try {
-      await this.runInstaller(apacheServer.baseUrl, paths, inputDto, installerDatabaseHost)
+      await this.runInstaller(apacheServer.baseUrl, paths, inputDto, installerDatabaseTarget.host)
     } finally {
       await apacheServer.stop()
     }
@@ -117,9 +119,10 @@ export default class DefaultStrategy extends AbstractStrategy {
   /**
    * @param {{projectPath: string, htdocsPath: string, trustPath: string, containerRootPath: string, containerTrustPath: string}} paths
    * @param {string} detectedImpresscmsVersion
+   * @param {{host: string, ipAddress: string}[]} extraHosts
    * @returns {Promise<import("../Infrastructure/ApacheContainerInstance.js").default>}
    */
-  async startApacheContainer(paths, detectedImpresscmsVersion) {
+  async startApacheContainer(paths, detectedImpresscmsVersion, extraHosts = []) {
     const phpRequirements = RequirementsInfo[detectedImpresscmsVersion]
     if (!phpRequirements) {
       throw new ImpressVersionRequirementsMissingError(detectedImpresscmsVersion)
@@ -130,7 +133,8 @@ export default class DefaultStrategy extends AbstractStrategy {
       htdocsPath: paths.htdocsPath,
       trustPath: paths.trustPath,
       containerRootPath: paths.containerRootPath,
-      containerTrustPath: paths.containerTrustPath
+      containerTrustPath: paths.containerTrustPath,
+      extraHosts
     })
 
     await apacheContainer.start()
@@ -185,20 +189,52 @@ export default class DefaultStrategy extends AbstractStrategy {
   }
 
   /**
-   * @param {import("../DTO/InputDto.js").default} inputDto
-   * @returns {string}
+   * @param {string} databaseHost
+   * @returns {Promise<{host: string, extraHosts: {host: string, ipAddress: string}[]}>}
    */
-  resolveInstallerDatabaseHost(inputDto) {
-    if (inputDto.databaseHostInContainer) {
-      return inputDto.databaseHostInContainer
-    }
-
-    const databaseHost = inputDto.databaseHost
+  async resolveInstallerDatabaseTarget(databaseHost) {
     if (installerLocalHosts.has(databaseHost)) {
-      return installerHostAlias
+      return {host: installerHostAlias, extraHosts: []}
     }
 
-    return databaseHost
+    if (this.isIpLoopback(databaseHost)) {
+      return {host: installerHostAlias, extraHosts: []}
+    }
+
+    if (await this.resolvesToLoopback(databaseHost)) {
+      return {
+        host: databaseHost,
+        extraHosts: [
+          {
+            host: databaseHost,
+            ipAddress: hostGatewayAddress
+          }
+        ]
+      }
+    }
+
+    return {host: databaseHost, extraHosts: []}
+  }
+
+  /**
+   * @param {string} host
+   * @returns {Promise<boolean>}
+   */
+  async resolvesToLoopback(host) {
+    try {
+      const addresses = await dnsLookup(host, {all: true})
+      return addresses.some(addressInfo => this.isIpLoopback(addressInfo.address))
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * @param {string} address
+   * @returns {boolean}
+   */
+  isIpLoopback(address) {
+    return address.startsWith("127.") || address === "::1" || address === "0:0:0:0:0:0:0:1"
   }
 
   /**
