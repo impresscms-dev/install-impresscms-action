@@ -2,6 +2,9 @@ export const services = {
   "service.actions_core": {
     class: "../Services/ActionsCoreService.js"
   },
+  "service.github_context": {
+    class: "../Services/GitHubContextService.js"
+  },
   "factory.input_dto": {
     class: "../Factories/InputDtoFactory.js",
     arguments: [
@@ -35,7 +38,8 @@ export const services = {
   "service.playwright_artifacts": {
     class: "../Services/PlaywrightArtifactsService.js",
     arguments: [
-      "@service.actions_core"
+      "@service.actions_core",
+      "@service.github_context"
     ]
   },
   "factory.apache_container": {

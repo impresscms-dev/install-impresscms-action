@@ -6,9 +6,11 @@ import {DefaultArtifactClient} from "@actions/artifact"
 export default class PlaywrightArtifactsService {
   /**
    * @param {import("./ActionsCoreService.js").default} actionsCore
+   * @param {import("./GitHubContextService.js").default} gitHubContextService
    */
-  constructor(actionsCore) {
+  constructor(actionsCore, gitHubContextService) {
     this.actionsCore = actionsCore
+    this.gitHubContextService = gitHubContextService
     this.artifactClient = new DefaultArtifactClient()
   }
 
@@ -37,8 +39,8 @@ export default class PlaywrightArtifactsService {
    * @returns {string}
    */
   createArtifactName() {
-    const runId = process.env.GITHUB_RUN_ID ?? "local"
-    const runAttempt = process.env.GITHUB_RUN_ATTEMPT ?? "1"
+    const runId = this.gitHubContextService.getRunId()
+    const runAttempt = this.gitHubContextService.getRunAttempt()
     return `install-impresscms-playwright-debug-${runId}-${runAttempt}-${Date.now()}`
   }
 

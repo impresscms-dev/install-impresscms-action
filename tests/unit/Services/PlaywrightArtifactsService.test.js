@@ -31,16 +31,17 @@ describe("PlaywrightArtifactsService", () => {
     const info = jest.fn()
     const warning = jest.fn()
     const actionsCore = {info, warning}
-    const service = new PlaywrightArtifactsService(actionsCore)
+    const gitHubContextService = {
+      getRunId: jest.fn().mockReturnValue("123"),
+      getRunAttempt: jest.fn().mockReturnValue("2")
+    }
+    const service = new PlaywrightArtifactsService(actionsCore, gitHubContextService)
     const playwrightInstallerClient = {
       captureFailureArtifacts: jest.fn().mockResolvedValue({
         files: ["/tmp/pw/playwright-console.log", "/tmp/pw/playwright-screenshot.png"],
         rootDirectory: "/tmp/pw"
       })
     }
-
-    process.env.GITHUB_RUN_ID = "123"
-    process.env.GITHUB_RUN_ATTEMPT = "2"
 
     await service.uploadFailureArtifacts(playwrightInstallerClient)
 
@@ -52,6 +53,8 @@ describe("PlaywrightArtifactsService", () => {
       "/tmp/pw"
     )
     expect(mkdtemp).toHaveBeenCalledWith(expect.stringContaining("install-impresscms-playwright-"))
+    expect(gitHubContextService.getRunId).toHaveBeenCalledTimes(1)
+    expect(gitHubContextService.getRunAttempt).toHaveBeenCalledTimes(1)
     expect(info).toHaveBeenCalledWith(expect.stringContaining("Uploaded Playwright debug artifacts"))
     expect(warning).not.toHaveBeenCalled()
   })
@@ -60,7 +63,10 @@ describe("PlaywrightArtifactsService", () => {
     const {PlaywrightArtifactsService, uploadArtifact} = await loadService()
     const info = jest.fn()
     const warning = jest.fn()
-    const service = new PlaywrightArtifactsService({info, warning})
+    const service = new PlaywrightArtifactsService(
+      {info, warning},
+      {getRunId: jest.fn().mockReturnValue("123"), getRunAttempt: jest.fn().mockReturnValue("2")}
+    )
     const playwrightInstallerClient = {
       captureFailureArtifacts: jest.fn().mockResolvedValue({
         files: [],
@@ -79,7 +85,10 @@ describe("PlaywrightArtifactsService", () => {
       mkdtempImpl: jest.fn().mockRejectedValue(new Error("temp dir failed"))
     })
     const warning = jest.fn()
-    const service = new PlaywrightArtifactsService({info: jest.fn(), warning})
+    const service = new PlaywrightArtifactsService(
+      {info: jest.fn(), warning},
+      {getRunId: jest.fn().mockReturnValue("123"), getRunAttempt: jest.fn().mockReturnValue("2")}
+    )
     const playwrightInstallerClient = {
       captureFailureArtifacts: jest.fn().mockRejectedValue(new Error("capture failed"))
     }
