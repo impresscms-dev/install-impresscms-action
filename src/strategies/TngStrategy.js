@@ -6,23 +6,22 @@ import ResultsDto from "../DTO/ResultsDto.js"
 
 export default class TngStrategy extends AbstractStrategy {
   /**
-   * @param {object} context
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
    * @param {import("../Services/CommandRunnerService.js").default} commandRunnerService
    */
-  constructor(context, filePermissionService, commandRunnerService) {
-    super(context)
+  constructor(filePermissionService, commandRunnerService) {
+    super()
     this.filePermissionService = filePermissionService
     this.commandRunnerService = commandRunnerService
   }
 
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} projectPath
    * @returns {Promise<boolean>}
    */
-  async isSupported(inputDto) {
+  async isSupported(inputDto, projectPath) {
     void inputDto
-    const {projectPath} = this.context
     const hasComposer = existsSync(path.join(projectPath, "composer.json"))
     const hasPhoenix = existsSync(path.join(projectPath, "bin", "phoenix")) || existsSync(path.join(projectPath, "bin", "phoenix.bat"))
     return hasComposer && hasPhoenix
@@ -30,13 +29,14 @@ export default class TngStrategy extends AbstractStrategy {
 
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} projectPath
    * @returns {Promise<ResultsDto>}
    */
-  async apply(inputDto) {
-    await this.installComposerDependencies()
-    const appKey = await this.resolveAppKey(inputDto.appKey)
-    this.ensureWritableFolders()
-    await this.runPhoenixMigrations(this.createPhoenixEnvironment(inputDto, appKey))
+  async apply(inputDto, projectPath) {
+    await this.installComposerDependencies(projectPath)
+    const appKey = await this.resolveAppKey(inputDto.appKey, projectPath)
+    this.ensureWritableFolders(projectPath)
+    await this.runPhoenixMigrations(projectPath, this.createPhoenixEnvironment(inputDto, appKey))
 
     return new ResultsDto({
       appKey,
@@ -46,10 +46,10 @@ export default class TngStrategy extends AbstractStrategy {
   }
 
   /**
+   * @param {string} projectPath
    * @returns {Promise<void>}
    */
-  async installComposerDependencies() {
-    const {projectPath} = this.context
+  async installComposerDependencies(projectPath) {
     await this.commandRunnerService.run("composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], {
       cwd: projectPath,
       env: process.env
@@ -58,14 +58,14 @@ export default class TngStrategy extends AbstractStrategy {
 
   /**
    * @param {string} configuredAppKey
+   * @param {string} projectPath
    * @returns {Promise<string>}
    */
-  async resolveAppKey(configuredAppKey) {
+  async resolveAppKey(configuredAppKey, projectPath) {
     if (configuredAppKey) {
       return configuredAppKey
     }
 
-    const {projectPath} = this.context
     try {
       const result = await this.commandRunnerService.run("php", ["./bin/console", "generate:app:key"], {
         cwd: projectPath,
@@ -78,10 +78,10 @@ export default class TngStrategy extends AbstractStrategy {
   }
 
   /**
+   * @param {string} projectPath
    * @returns {void}
    */
-  ensureWritableFolders() {
-    const {projectPath} = this.context
+  ensureWritableFolders(projectPath) {
     const foldersToChmod = [
       "storage",
       "modules",
@@ -127,11 +127,11 @@ export default class TngStrategy extends AbstractStrategy {
   }
 
   /**
+   * @param {string} projectPath
    * @param {NodeJS.ProcessEnv} environment
    * @returns {Promise<void>}
    */
-  async runPhoenixMigrations(environment) {
-    const {projectPath} = this.context
+  async runPhoenixMigrations(projectPath, environment) {
     await this.commandRunnerService.run("./bin/phoenix", ["migrate", "-vvv"], {
       cwd: projectPath,
       env: environment

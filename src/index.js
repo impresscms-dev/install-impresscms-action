@@ -24,16 +24,15 @@ const run = async () => {
     if (!existsSync(projectPath)) {
       throw new PathNotFoundError(projectPath)
     }
-    container.set("app.context", {projectPath})
 
     for (const taggedService of container.findTaggedServiceIds("strategy")) {
       const strategy = container.get(taggedService.id)
-      const supported = await strategy.isSupported(inputDto)
+      const supported = await strategy.isSupported(inputDto, projectPath)
       if (!supported) {
         continue
       }
 
-      const result = await strategy.apply(inputDto)
+      const result = await strategy.apply(inputDto, projectPath)
       if (!(result instanceof ResultsDto)) {
         throw new StrategyResultTypeError(strategy.name)
       }

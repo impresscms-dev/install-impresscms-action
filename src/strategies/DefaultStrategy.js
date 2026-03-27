@@ -17,14 +17,13 @@ const normalizePath = value => value.replaceAll("\\", "/")
 
 export default class DefaultStrategy extends AbstractStrategy {
   /**
-   * @param {object} context
    * @param {import("../Services/NetworkService.js").default} networkService
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
    * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
    * @param {import("../Factories/ApacheContainerFactory.js").default} apacheContainerFactory
    */
-  constructor(context, networkService, filePermissionService, impressVersionService, apacheContainerFactory) {
-    super(context)
+  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory) {
+    super()
     this.networkService = networkService
     this.filePermissionService = filePermissionService
     this.impressVersionService = impressVersionService
@@ -33,11 +32,11 @@ export default class DefaultStrategy extends AbstractStrategy {
 
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} projectPath
    * @returns {Promise<boolean>}
    */
-  async isSupported(inputDto) {
+  async isSupported(inputDto, projectPath) {
     void inputDto
-    const {projectPath} = this.context
     const hasLegacyInstaller = existsSync(path.join(projectPath, "htdocs", "install", "page_langselect.php"))
     const hasLegacyMainFile = existsSync(path.join(projectPath, "htdocs", "mainfile.php"))
     const hasComposer = existsSync(path.join(projectPath, "composer.json"))
@@ -46,10 +45,11 @@ export default class DefaultStrategy extends AbstractStrategy {
 
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} projectPath
    * @returns {Promise<ResultsDto>}
    */
-  async apply(inputDto) {
-    const paths = this.resolveLegacyPaths()
+  async apply(inputDto, projectPath) {
+    const paths = this.resolveLegacyPaths(projectPath)
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
     const apacheServer = await this.startApacheContainer(paths)
@@ -68,10 +68,10 @@ export default class DefaultStrategy extends AbstractStrategy {
   }
 
   /**
+   * @param {string} projectPath
    * @returns {{projectPath: string, htdocsPath: string, trustPath: string}}
    */
-  resolveLegacyPaths() {
-    const {projectPath} = this.context
+  resolveLegacyPaths(projectPath) {
     return {
       projectPath,
       htdocsPath: path.join(projectPath, "htdocs"),

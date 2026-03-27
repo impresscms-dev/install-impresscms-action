@@ -1,7 +1,4 @@
 export const services = {
-  "app.context": {
-    synthetic: true
-  },
   "service.actions_core": {
     class: "../Services/ActionsCoreService.js"
   },
@@ -26,7 +23,6 @@ export const services = {
   "strategy.tng": {
     class: "../strategies/TngStrategy.js",
     arguments: [
-      "@app.context",
       "@service.file_permission",
       "@service.command_runner"
     ],
@@ -37,7 +33,6 @@ export const services = {
   "strategy.default": {
     class: "../strategies/DefaultStrategy.js",
     arguments: [
-      "@app.context",
       "@service.network",
       "@service.file_permission",
       "@service.impress_version",

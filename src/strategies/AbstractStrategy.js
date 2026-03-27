@@ -2,28 +2,31 @@ import AbstractMethodNotImplementedError from "../Errors/AbstractMethodNotImplem
 
 export default class AbstractStrategy {
   /**
-   * @param {object} context
+   * @returns {void}
    */
-  constructor(context) {
-    this.context = context
+  constructor() {
     this.name = this.constructor.name
   }
 
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} projectPath
    * @returns {Promise<boolean>}
    */
-  async isSupported(inputDto) {
+  async isSupported(inputDto, projectPath) {
     void inputDto
+    void projectPath
     throw new AbstractMethodNotImplementedError(this.name, "isSupported")
   }
 
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} projectPath
    * @returns {Promise<import("../DTO/ResultsDto.js").default>}
    */
-  async apply(inputDto) {
+  async apply(inputDto, projectPath) {
     void inputDto
+    void projectPath
     throw new AbstractMethodNotImplementedError(this.name, "apply")
   }
 }
