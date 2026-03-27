@@ -5,6 +5,7 @@ import {spawn, spawnSync} from "node:child_process"
 import {jest} from "@jest/globals"
 import {GenericContainer, Wait} from "testcontainers"
 import RequirementsInfo from "../../src/Config/RequirementsInfo.js"
+import LegacyTagByVersion from "../../src/Config/LegacyTagByVersion.js"
 import InputDto from "../../src/DTO/InputDto.js"
 import CommandRunnerService from "../../src/Services/CommandRunnerService.js"
 import FilePermissionService from "../../src/Services/FilePermissionService.js"
@@ -22,21 +23,13 @@ const MYSQL_DATABASE = "icms"
 const MYSQL_USER = "root"
 const MYSQL_PASSWORD = MYSQL_ROOT_PASSWORD
 const REQUIREMENTS_VERSIONS = Object.keys(RequirementsInfo).sort()
-const LEGACY_TAG_BY_VERSION = {
-  "1.0": "impresscms_1.0.3_final",
-  "1.2": "v1.2.9",
-  "1.3": "v1.3.12",
-  "1.4": "v1.4.6",
-  "1.5": "v1.5.0-rc",
-  "2.0": "v2.0.2"
-}
 const INTEGRATION_VARIANT = process.env.INTEGRATION_VARIANT || "all"
 const INTEGRATION_IMPRESSCMS_REF = process.env.INTEGRATION_IMPRESSCMS_REF || ""
 const HAS_DOCKER = commandExists("docker")
 const integrationDescribe = HAS_DOCKER ? describe : describe.skip
 const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
   ? REQUIREMENTS_VERSIONS
-  : (LEGACY_TAG_BY_VERSION[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
+  : (LegacyTagByVersion[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
 const runTngVariant = INTEGRATION_VARIANT === "all" || INTEGRATION_VARIANT === "tng"
 
 /**
@@ -160,7 +153,7 @@ integrationDescribe("Installation Integration", () => {
         return [version, INTEGRATION_IMPRESSCMS_REF]
       }
 
-      return [version, LEGACY_TAG_BY_VERSION[version] || ""]
+      return [version, LegacyTagByVersion[version] || ""]
     }))
   })
 
