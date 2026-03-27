@@ -1,5 +1,7 @@
 import {jest} from "@jest/globals"
 
+const hasPath = (filePath, expectedPath) => String(filePath).replaceAll("\\", "/").includes(expectedPath)
+
 const loadStrategy = async ({existsSync = jest.fn(), mkdirSync = jest.fn(), lookup = jest.fn()} = {}) => {
   jest.resetModules()
   jest.unstable_mockModule("node:fs", () => ({
@@ -36,8 +38,8 @@ const createInputDto = () => ({
 describe("DefaultStrategy", () => {
   test("isSupported returns true for legacy structure without composer", async () => {
     const existsSync = jest.fn(filePath =>
-      String(filePath).includes("htdocs\\install\\page_langselect.php") ||
-      String(filePath).includes("htdocs\\mainfile.php")
+      hasPath(filePath, "htdocs/install/page_langselect.php") ||
+      hasPath(filePath, "htdocs/mainfile.php")
     )
     const {DefaultStrategy} = await loadStrategy({existsSync})
     const strategy = new DefaultStrategy(
@@ -54,9 +56,9 @@ describe("DefaultStrategy", () => {
 
   test("isSupported returns false when composer.json exists", async () => {
     const existsSync = jest.fn(filePath =>
-      String(filePath).includes("htdocs\\install\\page_langselect.php") ||
-      String(filePath).includes("htdocs\\mainfile.php") ||
-      String(filePath).includes("composer.json")
+      hasPath(filePath, "htdocs/install/page_langselect.php") ||
+      hasPath(filePath, "htdocs/mainfile.php") ||
+      hasPath(filePath, "composer.json")
     )
     const {DefaultStrategy} = await loadStrategy({existsSync})
     const strategy = new DefaultStrategy(
@@ -112,7 +114,9 @@ describe("DefaultStrategy", () => {
       send: jest.fn().mockResolvedValue({}),
       stop: jest.fn().mockResolvedValue(undefined)
     }
-    const {DefaultStrategy} = await loadStrategy()
+    const {DefaultStrategy} = await loadStrategy({
+      existsSync: jest.fn(filePath => hasPath(filePath, "htdocs/install/page_dbconnection.php"))
+    })
     const strategy = new DefaultStrategy(
       networkService,
       {chmodRecursive: jest.fn()},
@@ -124,7 +128,8 @@ describe("DefaultStrategy", () => {
 
     await strategy.runInstaller("http://localhost:8080", {
       containerRootPath: "/var/www/html",
-      containerTrustPath: "/var/www/trust_path"
+      containerTrustPath: "/var/www/trust_path",
+      htdocsPath: "/repo/htdocs"
     }, createInputDto())
 
     expect(networkService.waitForServer).toHaveBeenCalledWith("http://localhost:8080/install/index.php")
@@ -135,6 +140,49 @@ describe("DefaultStrategy", () => {
       formData: expect.objectContaining({
         DB_HOST: "127.0.0.1",
         DB_PORT: "3306"
+      })
+    })
+    expect(client.send).toHaveBeenCalledWith("/install/page_dbsettings.php", {
+      method: "POST",
+      formData: expect.objectContaining({
+        DB_NAME: "icms"
+      })
+    })
+    expect(client.stop).toHaveBeenCalledTimes(1)
+  })
+
+  test("runInstaller submits legacy db form when dbconnection step is missing", async () => {
+    const networkService = {waitForServer: jest.fn().mockResolvedValue(undefined)}
+    const client = {
+      start: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn().mockResolvedValue({}),
+      stop: jest.fn().mockResolvedValue(undefined)
+    }
+    const {DefaultStrategy} = await loadStrategy({
+      existsSync: jest.fn().mockReturnValue(false)
+    })
+    const strategy = new DefaultStrategy(
+      networkService,
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn().mockReturnValue("1.0.3"), toMajorMinor: jest.fn().mockReturnValue("1.0")},
+      {build: jest.fn()},
+      {build: jest.fn().mockReturnValue(client)},
+      {uploadFailureArtifacts: jest.fn()}
+    )
+
+    await strategy.runInstaller("http://localhost:8080", {
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path",
+      htdocsPath: "/repo/htdocs"
+    }, createInputDto(), "host.docker.internal")
+
+    expect(client.send).not.toHaveBeenCalledWith("/install/page_dbconnection.php", expect.anything())
+    expect(client.send).toHaveBeenCalledWith("/install/page_dbsettings.php", {
+      method: "POST",
+      formData: expect.objectContaining({
+        DB_TYPE: "mysql",
+        DB_HOST: "host.docker.internal",
+        DB_NAME: "icms"
       })
     })
     expect(client.stop).toHaveBeenCalledTimes(1)
@@ -161,7 +209,8 @@ describe("DefaultStrategy", () => {
 
     await expect(strategy.runInstaller("http://localhost:8080", {
       containerRootPath: "/var/www/html",
-      containerTrustPath: "/var/www/trust_path"
+      containerTrustPath: "/var/www/trust_path",
+      htdocsPath: "/repo/htdocs"
     }, createInputDto())).rejects.toThrow("playwright failed")
 
     expect(playwrightArtifactsService.uploadFailureArtifacts).toHaveBeenCalledWith(client)

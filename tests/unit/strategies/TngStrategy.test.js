@@ -1,5 +1,7 @@
 import {jest} from "@jest/globals"
 
+const hasPath = (filePath, expectedPath) => String(filePath).replaceAll("\\", "/").includes(expectedPath)
+
 const loadStrategy = async ({existsSync = jest.fn()} = {}) => {
   jest.resetModules()
   jest.unstable_mockModule("node:fs", () => ({
@@ -12,7 +14,7 @@ const loadStrategy = async ({existsSync = jest.fn()} = {}) => {
 
 describe("TngStrategy", () => {
   test("isSupported returns true when composer and phoenix are present", async () => {
-    const existsSync = jest.fn(filePath => String(filePath).includes("composer.json") || String(filePath).includes("bin\\phoenix"))
+    const existsSync = jest.fn(filePath => hasPath(filePath, "composer.json") || hasPath(filePath, "bin/phoenix"))
     const {TngStrategy} = await loadStrategy({existsSync})
     const strategy = new TngStrategy({chmodRecursive: jest.fn()}, {run: jest.fn()}, {detect: jest.fn()})
 
@@ -20,7 +22,7 @@ describe("TngStrategy", () => {
   })
 
   test("isSupported returns false when composer is missing", async () => {
-    const existsSync = jest.fn(filePath => String(filePath).includes("bin\\phoenix"))
+    const existsSync = jest.fn(filePath => hasPath(filePath, "bin/phoenix"))
     const {TngStrategy} = await loadStrategy({existsSync})
     const strategy = new TngStrategy({chmodRecursive: jest.fn()}, {run: jest.fn()}, {detect: jest.fn()})
 

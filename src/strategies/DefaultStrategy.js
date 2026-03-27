@@ -159,8 +159,12 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_start.php")
       await client.send("/install/page_modcheck.php")
       await client.send("/install/page_pathsettings.php", {method: "POST", formData: this.createPathSettingsFormData(paths, inputDto)})
-      await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto, installerDatabaseHost)})
-      await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createDbSettingsFormData(inputDto)})
+      if (this.hasDbConnectionStep(paths)) {
+        await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto, installerDatabaseHost)})
+        await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createDbSettingsFormData(inputDto)})
+      } else {
+        await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createLegacyDbSettingsFormData(inputDto, installerDatabaseHost)})
+      }
       await client.send("/install/page_configsave.php", {method: "POST", formData: {}})
       await client.send("/install/page_tablescreate.php", {method: "POST", formData: {}})
       await client.send("/install/page_siteinit.php", {method: "POST", formData: this.createSiteInitFormData(inputDto)})
@@ -173,6 +177,14 @@ export default class DefaultStrategy extends AbstractStrategy {
     } finally {
       await client.stop()
     }
+  }
+
+  /**
+   * @param {{htdocsPath: string}} paths
+   * @returns {boolean}
+   */
+  hasDbConnectionStep(paths) {
+    return existsSync(path.join(paths.htdocsPath, "install", "page_dbconnection.php"))
   }
 
   /**
@@ -265,6 +277,52 @@ export default class DefaultStrategy extends AbstractStrategy {
       DB_PREFIX: inputDto.databasePrefix,
       DB_SALT: randomBytes(16).toString("hex")
     }
+  }
+
+  /**
+   * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} installerDatabaseHost
+   * @returns {Record<string, string>}
+   */
+  createLegacyDbSettingsFormData(inputDto, installerDatabaseHost) {
+    return {
+      DB_TYPE: this.resolveLegacyDatabaseType(inputDto.databaseType),
+      DB_HOST: this.resolveLegacyDatabaseHost(installerDatabaseHost, inputDto.databasePort),
+      DB_USER: inputDto.databaseUser,
+      DB_PASS: inputDto.databasePassword,
+      DB_NAME: inputDto.databaseName,
+      DB_PREFIX: inputDto.databasePrefix,
+      DB_PCONNECT: "0"
+    }
+  }
+
+  /**
+   * @param {string} databaseType
+   * @returns {string}
+   */
+  resolveLegacyDatabaseType(databaseType) {
+    if (databaseType.startsWith("pdo.")) {
+      return databaseType.slice(4)
+    }
+
+    return databaseType
+  }
+
+  /**
+   * @param {string} databaseHost
+   * @param {string} databasePort
+   * @returns {string}
+   */
+  resolveLegacyDatabaseHost(databaseHost, databasePort) {
+    if (!databasePort || databasePort === "3306") {
+      return databaseHost
+    }
+
+    if (databaseHost.includes(":")) {
+      return databaseHost
+    }
+
+    return `${databaseHost}:${databasePort}`
   }
 
   /**
