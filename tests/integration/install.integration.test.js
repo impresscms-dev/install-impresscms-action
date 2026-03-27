@@ -6,6 +6,7 @@ import {jest} from "@jest/globals"
 import {GenericContainer, Wait} from "testcontainers"
 import RequirementsInfo from "../../src/Config/RequirementsInfo.js"
 import LegacyTagByVersion from "../../src/Config/LegacyTagByVersion.js"
+import ImpresscmsRepositoryInfo from "../../src/Config/ImpresscmsRepositoryInfo.js"
 import InputDto from "../../src/DTO/InputDto.js"
 import CommandRunnerService from "../../src/Services/CommandRunnerService.js"
 import FilePermissionService from "../../src/Services/FilePermissionService.js"
@@ -16,7 +17,6 @@ import PlaywrightInstallerClientFactory from "../../src/Factories/PlaywrightInst
 import DefaultStrategy from "../../src/strategies/DefaultStrategy.js"
 import TngStrategy from "../../src/strategies/TngStrategy.js"
 
-const IMPRESSCMS_REPOSITORY_URL = "https://github.com/ImpressCMS/impresscms.git"
 const MYSQL_IMAGE = process.env.INTEGRATION_MYSQL_IMAGE || "mariadb:10.6"
 const MYSQL_ROOT_PASSWORD = "icms"
 const MYSQL_DATABASE = "icms"
@@ -119,7 +119,7 @@ function createInputDto(majorMinor, databaseHost, databasePort) {
  * @returns {Promise<void>}
  */
 async function checkoutImpresscmsReference(targetPath, ref) {
-  await runCommand("git", ["clone", "--depth", "1", "--branch", ref, IMPRESSCMS_REPOSITORY_URL, targetPath])
+  await runCommand("git", ["clone", "--depth", "1", "--branch", ref, ImpresscmsRepositoryInfo.url, targetPath])
 }
 
 /**
