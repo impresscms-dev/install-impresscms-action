@@ -11,6 +11,8 @@ import RequirementsInfo from "../Config/RequirementsInfo.js"
  * @returns {string}
  */
 const normalizePath = value => value.replaceAll("\\", "/")
+const installerLocalHosts = new Set(["localhost", "127.0.0.1", "::1"])
+const installerHostAlias = "host.docker.internal"
 
 export default class DefaultStrategy extends AbstractStrategy {
   /**
@@ -52,13 +54,14 @@ export default class DefaultStrategy extends AbstractStrategy {
   async apply(inputDto, projectPath) {
     const detectedImpresscmsVersion = this.impressVersionService.detect(projectPath)
     const requirementsVersion = this.impressVersionService.toMajorMinor(detectedImpresscmsVersion)
+    const installerDatabaseHost = this.resolveInstallerDatabaseHost(inputDto.databaseHost)
     const paths = this.resolveLegacyPaths(projectPath)
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
     const apacheServer = await this.startApacheContainer(paths, requirementsVersion)
 
     try {
-      await this.runInstaller(apacheServer.baseUrl, paths, inputDto)
+      await this.runInstaller(apacheServer.baseUrl, paths, inputDto, installerDatabaseHost)
     } finally {
       await apacheServer.stop()
     }
@@ -139,9 +142,10 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @param {string} baseUrl
    * @param {{projectPath: string, htdocsPath: string, trustPath: string}} paths
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} installerDatabaseHost
    * @returns {Promise<void>}
    */
-  async runInstaller(baseUrl, paths, inputDto) {
+  async runInstaller(baseUrl, paths, inputDto, installerDatabaseHost = inputDto.databaseHost) {
     await this.networkService.waitForServer(`${baseUrl}/install/index.php`)
     const client = this.playwrightInstallerClientFactory.build(baseUrl)
     await client.start()
@@ -151,7 +155,7 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_start.php")
       await client.send("/install/page_modcheck.php")
       await client.send("/install/page_pathsettings.php", {method: "POST", formData: this.createPathSettingsFormData(paths, inputDto)})
-      await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto)})
+      await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto, installerDatabaseHost)})
       await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createDbSettingsFormData(inputDto)})
       await client.send("/install/page_configsave.php", {method: "POST", formData: {}})
       await client.send("/install/page_tablescreate.php", {method: "POST", formData: {}})
@@ -181,13 +185,27 @@ export default class DefaultStrategy extends AbstractStrategy {
   }
 
   /**
+   * @param {string} databaseHost
+   * @returns {string}
+   */
+  resolveInstallerDatabaseHost(databaseHost) {
+    if (installerLocalHosts.has(databaseHost)) {
+      return installerHostAlias
+    }
+
+    return databaseHost
+  }
+
+  /**
    * @param {import("../DTO/InputDto.js").default} inputDto
+   * @param {string} installerDatabaseHost
    * @returns {Record<string, string>}
    */
-  createDbConnectionFormData(inputDto) {
+  createDbConnectionFormData(inputDto, installerDatabaseHost = inputDto.databaseHost) {
     return {
       DB_TYPE: inputDto.databaseType,
-      DB_HOST: inputDto.databaseHost,
+      DB_HOST: installerDatabaseHost,
+      DB_PORT: inputDto.databasePort,
       DB_USER: inputDto.databaseUser,
       DB_PASS: inputDto.databasePassword,
       DB_PCONNECT: "0"

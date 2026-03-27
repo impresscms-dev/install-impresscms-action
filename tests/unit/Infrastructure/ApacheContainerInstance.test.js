@@ -10,7 +10,8 @@ const loadInstance = async ({startedContainer = null} = {}) => {
   })
 
   const withStartupTimeoutMock = jest.fn().mockReturnValue({start: startMock})
-  const withBindMountsMock = jest.fn().mockReturnValue({withStartupTimeout: withStartupTimeoutMock})
+  const withExtraHostsMock = jest.fn().mockReturnValue({withStartupTimeout: withStartupTimeoutMock})
+  const withBindMountsMock = jest.fn().mockReturnValue({withExtraHosts: withExtraHostsMock})
   const withExposedPortsMock = jest.fn().mockReturnValue({withBindMounts: withBindMountsMock})
   const genericContainerCtor = jest.fn().mockImplementation(() => ({
     withExposedPorts: withExposedPortsMock
@@ -26,6 +27,7 @@ const loadInstance = async ({startedContainer = null} = {}) => {
     genericContainerCtor,
     withExposedPortsMock,
     withBindMountsMock,
+    withExtraHostsMock,
     withStartupTimeoutMock,
     startMock
   }
@@ -38,6 +40,7 @@ describe("ApacheContainerInstance", () => {
       genericContainerCtor,
       withExposedPortsMock,
       withBindMountsMock,
+      withExtraHostsMock,
       withStartupTimeoutMock,
       startMock
     } = await loadInstance()
@@ -57,6 +60,12 @@ describe("ApacheContainerInstance", () => {
     expect(withBindMountsMock).toHaveBeenCalledWith([
       {source: "/host/htdocs", target: "/var/www/html"},
       {source: "/host/trust_path", target: "/var/www/trust_path"}
+    ])
+    expect(withExtraHostsMock).toHaveBeenCalledWith([
+      {
+        host: "host.docker.internal",
+        ipAddress: "host-gateway"
+      }
     ])
     expect(withStartupTimeoutMock).toHaveBeenCalledWith(120000)
     expect(startMock).toHaveBeenCalledTimes(1)

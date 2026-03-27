@@ -40,6 +40,12 @@ export default class ApacheContainerInstance {
         {source: this.#config.htdocsPath, target: this.#config.containerRootPath},
         {source: this.#config.trustPath, target: this.#config.containerTrustPath}
       ])
+      .withExtraHosts([
+        {
+          host: "host.docker.internal",
+          ipAddress: "host-gateway"
+        }
+      ])
       .withStartupTimeout(120000)
       .start()
 

@@ -23,6 +23,7 @@ const createInputDto = () => ({
   databaseCharset: "utf8",
   databaseCollation: "utf8_general_ci",
   databasePrefix: "icms",
+  databasePort: "3306",
   adminName: "admin",
   adminLogin: "admin",
   adminPass: "secret",
@@ -125,6 +126,13 @@ describe("DefaultStrategy", () => {
     expect(networkService.waitForServer).toHaveBeenCalledWith("http://localhost:8080/install/index.php")
     expect(client.start).toHaveBeenCalledTimes(1)
     expect(client.send).toHaveBeenCalled()
+    expect(client.send).toHaveBeenCalledWith("/install/page_dbconnection.php", {
+      method: "POST",
+      formData: expect.objectContaining({
+        DB_HOST: "127.0.0.1",
+        DB_PORT: "3306"
+      })
+    })
     expect(client.stop).toHaveBeenCalledTimes(1)
   })
 
@@ -179,12 +187,44 @@ describe("DefaultStrategy", () => {
     jest.spyOn(strategy, "startApacheContainer").mockResolvedValue(apacheServer)
     jest.spyOn(strategy, "runInstaller").mockResolvedValue(undefined)
 
-    const result = await strategy.apply(createInputDto(), "/repo")
+    const inputDto = createInputDto()
+    const result = await strategy.apply(inputDto, "/repo")
 
     expect(result.appKey).toBe("fixed-key")
     expect(result.detectedImpresscmsVersion).toBe("2.0.0")
     expect(result.usesComposer).toBe(false)
     expect(result.usesPhoenix).toBe(false)
+    expect(strategy.runInstaller).toHaveBeenCalledWith("http://localhost:8080", {trustPath: "/repo/trust_path"}, inputDto, "host.docker.internal")
     expect(apacheServer.stop).toHaveBeenCalledTimes(1)
+  })
+
+  test("resolveInstallerDatabaseHost maps localhost values to host alias", async () => {
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
+      {build: jest.fn()},
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
+    )
+
+    expect(strategy.resolveInstallerDatabaseHost("localhost")).toBe("host.docker.internal")
+    expect(strategy.resolveInstallerDatabaseHost("127.0.0.1")).toBe("host.docker.internal")
+    expect(strategy.resolveInstallerDatabaseHost("::1")).toBe("host.docker.internal")
+  })
+
+  test("resolveInstallerDatabaseHost keeps non-local host unchanged", async () => {
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      {waitForServer: jest.fn()},
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
+      {build: jest.fn()},
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
+    )
+
+    expect(strategy.resolveInstallerDatabaseHost("mysql")).toBe("mysql")
   })
 })
