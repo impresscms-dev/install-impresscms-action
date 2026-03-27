@@ -1,5 +1,4 @@
 import {existsSync, mkdirSync} from "node:fs"
-import net from "node:net"
 import path from "node:path"
 import process from "node:process"
 import {randomBytes} from "node:crypto"
@@ -8,36 +7,11 @@ import {CookieJar} from "tough-cookie"
 import makeFetchCookie from "fetch-cookie"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
-import PhpServerNotReadyError from "../Errors/PhpServerNotReadyError.js"
 import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
 import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
+import NetworkService from "../Services/NetworkService.js"
 
 const normalizePath = value => value.replaceAll("\\", "/")
-
-const getFreePort = async () => await new Promise((resolve, reject) => {
-  const server = net.createServer()
-  server.listen(0, "127.0.0.1", () => {
-    const address = server.address()
-    const port = typeof address === "object" && address ? address.port : 0
-    server.close(() => resolve(port))
-  })
-  server.on("error", reject)
-})
-
-const waitForServer = async (url, retries = 50, waitMs = 150) => {
-  for (let i = 0; i < retries; i += 1) {
-    try {
-      const response = await fetch(url, {redirect: "manual"})
-      if (response.status >= 200 && response.status < 500) {
-        return
-      }
-    } catch {
-      // retry
-    }
-    await new Promise(resolve => setTimeout(resolve, waitMs))
-  }
-  throw new PhpServerNotReadyError()
-}
 
 const createInstallerClient = baseUrl => {
   const cookieJar = new CookieJar()
@@ -116,7 +90,7 @@ export default class DefaultStrategy extends AbstractStrategy {
       }
     }
 
-    const port = await getFreePort()
+    const port = await NetworkService.getFreePort()
     const baseUrl = `http://127.0.0.1:${port}`
     const phpServer = spawn("php", ["-S", `127.0.0.1:${port}`, "-t", htdocsPath], {
       cwd: htdocsPath,
@@ -127,7 +101,7 @@ export default class DefaultStrategy extends AbstractStrategy {
     phpServer.stderr.on("data", data => process.stderr.write(data.toString()))
 
     try {
-      await waitForServer(`${baseUrl}/install/index.php`)
+      await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
       const client = createInstallerClient(baseUrl)
 
       await client.send("/install/page_langselect.php", {
