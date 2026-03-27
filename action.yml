@@ -1,10 +1,10 @@
-name: 'Install ImpressCMS'
-description: 'GitHub action to install ImpressCMS'
+name: "Install ImpressCMS"
+description: "GitHub action to install ImpressCMS"
 
 # https://actions-cool.github.io/github-action-branding/
 branding:
   icon: cpu
-  color: 'yellow'
+  color: "yellow"
 
 inputs:
   url:
@@ -78,83 +78,13 @@ inputs:
 outputs:
   app_key:
     description: Generated application key
-    value: ${{ steps.checks2.outputs.app_key }}
+  detected_impresscms_version:
+    description: Detected ImpressCMS version in semver format
   uses_composer:
     description: Returns if current ImpressCMS version uses Composer for package management
-    value: ${{ steps.checks1.outputs.uses_composer }}
   uses_phoenix:
     description: Returns if current ImpressCMS version uses Phoenix for migrations
-    value: ${{ steps.checks2.outputs.uses_phoenix }}
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Doing some nessary checks (part I)
-      id: checks1
-      run: |
-        bash ${{ github.action_path }}/bin/uses-composer.sh
-      shell: bash
-      working-directory: ${{ inputs.path }}
-
-    - name: Failing because of no composer support
-      run: |
-        echo 'ERROR: Currently only ImpressCMS versions that has composer support are supported for this action'
-        exit 1
-      shell: bash
-      if: steps.checks1.outputs.uses_composer == 'false'
-
-    - name: Install Composer dependencies (with dev)
-      run: composer install --no-progress --prefer-dist --optimize-autoloader
-      shell: bash
-      working-directory: ${{ inputs.path }}
-
-    - name: Doing some nessary checks (part II)
-      id: checks2
-      run: |
-        bash ${{ github.action_path }}/bin/app-key.sh "${{ inputs.app_key }}"
-        bash ${{ github.action_path }}/bin/uses-phoenix.sh
-      shell: bash
-      working-directory: ${{ inputs.path }}
-
-    - name: Failing because of no phoenix support
-      run: |
-        echo 'ERROR: Currently only ImpressCMS versions that has phoenix support are supported for this action'
-        exit 1
-      shell: bash
-      if: steps.checks1.outputs.uses_phoenix == 'false'
-
-    - name: Chmoding folders...
-      run: |
-        chmod -R 0777 ./storage || true
-        chmod -R 0777 ./modules || true 
-        chmod -R 0777 ./themes || true 
-        chmod -R 0777 ./uploads || true
-        chmod -R 0777 ./htdocs/modules || true 
-        chmod -R 0777 ./htdocs/themes || true 
-        chmod -R 0777 ./htdocs/uploads || true
-        chmod -R 0777 ./htdocs/images || true
-      shell: bash
-      working-directory: ${{ inputs.path }}
-
-    - name: Installing ImpressCMS
-      env:
-        URL: ${{ inputs.url }}
-        DB_TYPE: ${{ inputs.database_type }}
-        DB_HOST: ${{ inputs.database_host }}
-        DB_USER: ${{ inputs.database_user }}
-        DB_PASS: ${{ inputs.database_password }}
-        DB_PCONNECT: "0"
-        DB_NAME: ${{ inputs.database_name }}
-        DB_CHARSET: ${{ inputs.database_charset }}
-        DB_COLLATION: ${{ inputs.database_collation }}
-        DB_PREFIX: ${{ inputs.database_prefix }}
-        DB_PORT: ${{ inputs.database_port }}
-        INSTALL_ADMIN_PASS: ${{ inputs.admin_name }}
-        INSTALL_ADMIN_LOGIN: ${{ inputs.admin_login }}
-        INSTALL_ADMIN_NAME: ${{ inputs.admin_pass }}
-        INSTALL_ADMIN_EMAIL: ${{ inputs.admin_email }}
-        INSTALL_LANGUAGE: ${{ inputs.language }}
-        APP_KEY: ${{ steps.checks2.outputs.app_key }}
-      run: ./bin/phoenix migrate -vvv
-      shell: bash
-      working-directory: ${{ inputs.path }}
+  using: "node24"
+  main: "dist/index.js"

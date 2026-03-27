@@ -1,0 +1,102 @@
+import {GenericContainer} from "testcontainers"
+
+export default class ApacheContainerInstance {
+  #config
+  #container
+  #baseUrl
+
+  /**
+   * @param {object} config
+   * @param {string} config.phpVersion
+   * @param {string} config.htdocsPath
+   * @param {string} config.trustPath
+   * @param {string} config.containerRootPath
+   * @param {string} config.containerTrustPath
+   * @param {{host: string, ipAddress: string}[]} [config.extraHosts]
+   */
+  constructor(config) {
+    this.#config = config
+    this.#container = null
+    this.#baseUrl = ""
+  }
+
+  /**
+   * @returns {string}
+   */
+  get baseUrl() {
+    return this.#baseUrl
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async start() {
+    if (this.#container) {
+      return
+    }
+
+    const container = await new GenericContainer(`php:${this.#config.phpVersion}-apache`)
+      .withExposedPorts(80)
+      .withBindMounts([
+        {source: this.#config.htdocsPath, target: this.#config.containerRootPath},
+        {source: this.#config.trustPath, target: this.#config.containerTrustPath}
+      ])
+      .withExtraHosts(this.resolveExtraHosts())
+      .withStartupTimeout(120000)
+      .start()
+
+    this.#container = container
+    this.#baseUrl = `http://${container.getHost()}:${container.getMappedPort(80)}`
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async stop() {
+    if (!this.#container) {
+      return
+    }
+    await this.relaxBindMountPermissions()
+    await this.#container.stop()
+    this.#container = null
+    this.#baseUrl = ""
+  }
+
+  /**
+   * @returns {Promise<void>}
+   */
+  async relaxBindMountPermissions() {
+    if (!this.#container || typeof this.#container.exec !== "function") {
+      return
+    }
+
+    const targets = [this.#config.containerRootPath, this.#config.containerTrustPath]
+    for (const target of targets) {
+      try {
+        await this.#container.exec(["chmod", "-R", "a+rwx", target])
+      } catch (error) {
+        void error
+      }
+    }
+  }
+
+  /**
+   * @returns {{host: string, ipAddress: string}[]}
+   */
+  resolveExtraHosts() {
+    const extraHosts = [
+      {
+        host: "host.docker.internal",
+        ipAddress: "host-gateway"
+      },
+      ...(this.#config.extraHosts ?? [])
+    ]
+
+    const dedupedExtraHosts = new Map()
+    for (const extraHost of extraHosts) {
+      dedupedExtraHosts.set(extraHost.host, extraHost)
+    }
+
+    return Array.from(dedupedExtraHosts.values())
+  }
+}
