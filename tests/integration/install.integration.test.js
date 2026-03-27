@@ -1,7 +1,7 @@
 import {mkdtemp, rm} from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
-import {spawn, spawnSync} from "node:child_process"
+import {spawn} from "node:child_process"
 import {jest} from "@jest/globals"
 import {GenericContainer, Wait} from "testcontainers"
 import RequirementsInfo from "../../src/Config/RequirementsInfo.js"
@@ -9,6 +9,7 @@ import LegacyTagByVersion from "../../src/Config/LegacyTagByVersion.js"
 import ImpresscmsRepositoryInfo from "../../src/Config/ImpresscmsRepositoryInfo.js"
 import InputDto from "../../src/DTO/InputDto.js"
 import CommandRunnerService from "../../src/Services/CommandRunnerService.js"
+import CommandExistenceService from "../../src/Services/CommandExistenceService.js"
 import FilePermissionService from "../../src/Services/FilePermissionService.js"
 import ImpressVersionService from "../../src/Services/ImpressVersionService.js"
 import NetworkService from "../../src/Services/NetworkService.js"
@@ -25,21 +26,13 @@ const MYSQL_PASSWORD = MYSQL_ROOT_PASSWORD
 const REQUIREMENTS_VERSIONS = Object.keys(RequirementsInfo).sort()
 const INTEGRATION_VARIANT = process.env.INTEGRATION_VARIANT || "all"
 const INTEGRATION_IMPRESSCMS_REF = process.env.INTEGRATION_IMPRESSCMS_REF || ""
-const HAS_DOCKER = commandExists("docker")
+const commandExistenceService = new CommandExistenceService()
+const HAS_DOCKER = commandExistenceService.exists("docker")
 const integrationDescribe = HAS_DOCKER ? describe : describe.skip
 const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
   ? REQUIREMENTS_VERSIONS
   : (LegacyTagByVersion[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
 const runTngVariant = INTEGRATION_VARIANT === "all" || INTEGRATION_VARIANT === "tng"
-
-/**
- * @param {string} command
- * @returns {boolean}
- */
-function commandExists(command) {
-  const result = spawnSync(command, ["--version"], {stdio: "ignore"})
-  return result.status === 0
-}
 
 /**
  * @param {string} command
@@ -194,7 +187,7 @@ integrationDescribe("Installation Integration", () => {
     })
   }
 
-  const tngTest = runTngVariant && commandExists("php") && commandExists("composer") ? test : test.skip
+  const tngTest = runTngVariant && commandExistenceService.exists("php") && commandExistenceService.exists("composer") ? test : test.skip
   tngTest("installs tng branch", async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "icms-install-integration-"))
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
