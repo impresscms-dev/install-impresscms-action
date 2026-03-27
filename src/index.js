@@ -3,11 +3,11 @@ import path from "node:path"
 import process from "node:process"
 import {spawn} from "node:child_process"
 import * as core from "@actions/core"
+import {ContainerBuilder} from "node-dependency-injection"
 import InputDto from "./DTO/InputDto.js"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
 import DefaultStrategy from "./strategies/DefaultStrategy.js"
-import TaggedContainer from "./Infrastructure/TaggedContainer.js"
 import CommandFailedError from "./Errors/CommandFailedError.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
@@ -73,19 +73,14 @@ const run = async () => {
     runCommand
   }
 
-  const container = new TaggedContainer()
-  container.register({
-    id: "strategy.tng",
-    tags: ["strategy"],
-    factory: () => new TngStrategy(context)
-  })
-  container.register({
-    id: "strategy.default",
-    tags: ["strategy"],
-    factory: () => new DefaultStrategy(context)
-  })
+  const container = new ContainerBuilder()
+  container.register("strategy.tng", TngStrategy, [context]).addTag("strategy")
+  container.register("strategy.default", DefaultStrategy, [context]).addTag("strategy")
 
-  const strategies = container.resolveByTag("strategy")
+  const strategies = []
+  for (const taggedService of container.findTaggedServiceIds("strategy")) {
+    strategies.push(container.get(taggedService.id))
+  }
 
   for (const strategy of strategies) {
     const supported = await strategy.isSupported(inputDto)
