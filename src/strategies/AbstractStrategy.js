@@ -6,11 +6,13 @@ export default class AbstractStrategy {
     this.name = this.constructor.name
   }
 
-  async isSupported() {
+  async isSupported(inputDto) {
+    void inputDto
     throw new AbstractMethodNotImplementedError(this.name, "isSupported")
   }
 
-  async apply() {
+  async apply(inputDto) {
+    void inputDto
     throw new AbstractMethodNotImplementedError(this.name, "apply")
   }
 }

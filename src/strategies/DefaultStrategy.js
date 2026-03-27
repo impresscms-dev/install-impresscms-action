@@ -57,7 +57,8 @@ const createInstallerClient = baseUrl => {
 }
 
 export default class DefaultStrategy extends AbstractStrategy {
-  async isSupported() {
+  async isSupported(inputDto) {
+    void inputDto
     const {projectPath} = this.context
     const hasLegacyInstaller = existsSync(path.join(projectPath, "htdocs", "install", "page_langselect.php"))
     const hasLegacyMainFile = existsSync(path.join(projectPath, "htdocs", "mainfile.php"))
@@ -65,8 +66,8 @@ export default class DefaultStrategy extends AbstractStrategy {
     return hasLegacyInstaller && hasLegacyMainFile && !hasComposer
   }
 
-  async apply() {
-    const {projectPath, getInput, runCommand} = this.context
+  async apply(inputDto) {
+    const {projectPath, runCommand} = this.context
     const htdocsPath = path.join(projectPath, "htdocs")
     const trustPath = path.join(projectPath, "trust_path")
 
@@ -107,7 +108,7 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_langselect.php", {
         method: "POST",
         formData: {
-          lang: getInput("language", "english")
+          lang: inputDto.language
         }
       })
       await client.send("/install/page_start.php")
@@ -116,7 +117,7 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_pathsettings.php", {
         method: "POST",
         formData: {
-          URL: getInput("url", baseUrl),
+          URL: inputDto.url,
           ROOT_PATH: normalizePath(htdocsPath),
           TRUST_PATH: normalizePath(trustPath)
         }
@@ -125,10 +126,10 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_dbconnection.php", {
         method: "POST",
         formData: {
-          DB_TYPE: getInput("database_type", "pdo.mysql"),
-          DB_HOST: getInput("database_host", "127.0.0.1"),
-          DB_USER: getInput("database_user", ""),
-          DB_PASS: getInput("database_password", ""),
+          DB_TYPE: inputDto.databaseType,
+          DB_HOST: inputDto.databaseHost,
+          DB_USER: inputDto.databaseUser,
+          DB_PASS: inputDto.databasePassword,
           DB_PCONNECT: "0"
         }
       })
@@ -136,10 +137,10 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_dbsettings.php", {
         method: "POST",
         formData: {
-          DB_NAME: getInput("database_name", "icms"),
-          DB_CHARSET: getInput("database_charset", "utf8"),
-          DB_COLLATION: getInput("database_collation", "utf8_general_ci"),
-          DB_PREFIX: getInput("database_prefix", "icms"),
+          DB_NAME: inputDto.databaseName,
+          DB_CHARSET: inputDto.databaseCharset,
+          DB_COLLATION: inputDto.databaseCollation,
+          DB_PREFIX: inputDto.databasePrefix,
           DB_SALT: randomBytes(16).toString("hex")
         }
       })
@@ -155,11 +156,11 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_siteinit.php", {
         method: "POST",
         formData: {
-          adminname: getInput("admin_name", "icms"),
-          adminlogin_name: getInput("admin_login", "icms"),
-          adminmail: getInput("admin_email", "noreply@impresscms.dev"),
-          adminpass: getInput("admin_pass", "icms"),
-          adminpass2: getInput("admin_pass", "icms")
+          adminname: inputDto.adminName,
+          adminlogin_name: inputDto.adminLogin,
+          adminmail: inputDto.adminEmail,
+          adminpass: inputDto.adminPass,
+          adminpass2: inputDto.adminPass
         }
       })
       await client.send("/install/page_tablesfill.php", {
@@ -178,7 +179,7 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
 
     return new ResultsDto({
-      appKey: getInput("app_key", ""),
+      appKey: inputDto.appKey,
       usesComposer: false,
       usesPhoenix: false
     })

@@ -6,22 +6,23 @@ import ResultsDto from "../DTO/ResultsDto.js"
 import FilePermissionService from "../Services/FilePermissionService.js"
 
 export default class TngStrategy extends AbstractStrategy {
-  async isSupported() {
+  async isSupported(inputDto) {
+    void inputDto
     const {projectPath} = this.context
     const hasComposer = existsSync(path.join(projectPath, "composer.json"))
     const hasPhoenix = existsSync(path.join(projectPath, "bin", "phoenix")) || existsSync(path.join(projectPath, "bin", "phoenix.bat"))
     return hasComposer && hasPhoenix
   }
 
-  async apply() {
-    const {projectPath, getInput, runCommand} = this.context
+  async apply(inputDto) {
+    const {projectPath, runCommand} = this.context
 
     await runCommand("composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], {
       cwd: projectPath,
       env: process.env
     })
 
-    let appKey = getInput("app_key", "")
+    let appKey = inputDto.appKey
     if (!appKey) {
       try {
         const result = await runCommand("php", ["./bin/console", "generate:app:key"], {
@@ -51,22 +52,22 @@ export default class TngStrategy extends AbstractStrategy {
 
     const env = {
       ...process.env,
-      URL: getInput("url", "http://localhost"),
-      DB_TYPE: getInput("database_type", "pdo.mysql"),
-      DB_HOST: getInput("database_host", "127.0.0.1"),
-      DB_USER: getInput("database_user", ""),
-      DB_PASS: getInput("database_password", ""),
+      URL: inputDto.url,
+      DB_TYPE: inputDto.databaseType,
+      DB_HOST: inputDto.databaseHost,
+      DB_USER: inputDto.databaseUser,
+      DB_PASS: inputDto.databasePassword,
       DB_PCONNECT: "0",
-      DB_NAME: getInput("database_name", "icms"),
-      DB_CHARSET: getInput("database_charset", "utf8"),
-      DB_COLLATION: getInput("database_collation", "utf8_general_ci"),
-      DB_PREFIX: getInput("database_prefix", "icms"),
-      DB_PORT: getInput("database_port", "3306"),
-      INSTALL_ADMIN_PASS: getInput("admin_name", "icms"),
-      INSTALL_ADMIN_LOGIN: getInput("admin_login", "icms"),
-      INSTALL_ADMIN_NAME: getInput("admin_pass", "icms"),
-      INSTALL_ADMIN_EMAIL: getInput("admin_email", "noreply@impresscms.dev"),
-      INSTALL_LANGUAGE: getInput("language", "english"),
+      DB_NAME: inputDto.databaseName,
+      DB_CHARSET: inputDto.databaseCharset,
+      DB_COLLATION: inputDto.databaseCollation,
+      DB_PREFIX: inputDto.databasePrefix,
+      DB_PORT: inputDto.databasePort,
+      INSTALL_ADMIN_PASS: inputDto.adminName,
+      INSTALL_ADMIN_LOGIN: inputDto.adminLogin,
+      INSTALL_ADMIN_NAME: inputDto.adminPass,
+      INSTALL_ADMIN_EMAIL: inputDto.adminEmail,
+      INSTALL_LANGUAGE: inputDto.language,
       APP_KEY: appKey
     }
 

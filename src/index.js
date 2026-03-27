@@ -3,6 +3,7 @@ import path from "node:path"
 import process from "node:process"
 import {spawn} from "node:child_process"
 import * as core from "@actions/core"
+import InputDto from "./DTO/InputDto.js"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
 import DefaultStrategy from "./strategies/DefaultStrategy.js"
@@ -45,14 +46,14 @@ const runCommand = async (command, args, options = {}) => await new Promise((res
 })
 
 const run = async () => {
-  const projectPath = path.resolve(getInput("path", "."))
+  const inputDto = InputDto.fromActionInput(getInput)
+  const projectPath = path.resolve(inputDto.path)
   if (!existsSync(projectPath)) {
     throw new PathNotFoundError(projectPath)
   }
 
   const context = {
     projectPath,
-    getInput,
     runCommand
   }
 
@@ -62,12 +63,12 @@ const run = async () => {
   ]
 
   for (const strategy of strategies) {
-    const supported = await strategy.isSupported()
+    const supported = await strategy.isSupported(inputDto)
     if (!supported) {
       continue
     }
 
-    const result = await strategy.apply()
+    const result = await strategy.apply(inputDto)
     if (!(result instanceof ResultsDto)) {
       throw new StrategyResultTypeError(strategy.name)
     }
