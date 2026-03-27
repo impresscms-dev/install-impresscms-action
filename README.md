@@ -108,6 +108,14 @@ Run manually:
 npm run test:integration
 ```
 
+Run a single variant:
+
+```bash
+INTEGRATION_VARIANT=1.4 npm run test:integration
+```
+
+Supported values are `1.0`, `1.2`, `1.3`, `1.4`, `1.5`, `2.0`, `tng`, `all` (default).
+
 There is also manual GitHub workflow: `.github/workflows/integration.yml`.
 
 If you want to add some functionality or fix bugs, you can fork, change and create pull request. If you not sure how

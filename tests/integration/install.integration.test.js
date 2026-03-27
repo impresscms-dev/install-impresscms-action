@@ -30,8 +30,13 @@ const LEGACY_TAG_BY_VERSION = {
   "1.5": "v1.5.0-rc",
   "2.0": "v2.0.2"
 }
+const INTEGRATION_VARIANT = process.env.INTEGRATION_VARIANT || "all"
 const HAS_DOCKER = commandExists("docker")
 const integrationDescribe = HAS_DOCKER ? describe : describe.skip
+const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
+  ? REQUIREMENTS_VERSIONS
+  : (LEGACY_TAG_BY_VERSION[INTEGRATION_VARIANT] ? [INTEGRATION_VARIANT] : [])
+const runTngVariant = INTEGRATION_VARIANT === "all" || INTEGRATION_VARIANT === "tng"
 
 /**
  * @param {string} command
@@ -145,12 +150,16 @@ integrationDescribe("Installation Integration", () => {
   let versionTagMap = {}
 
   beforeAll(() => {
-    versionTagMap = Object.fromEntries(REQUIREMENTS_VERSIONS.map(version => {
+    if (INTEGRATION_VARIANT !== "all" && selectedLegacyVersions.length === 0 && !runTngVariant) {
+      throw new Error(`Unknown integration variant: ${INTEGRATION_VARIANT}`)
+    }
+
+    versionTagMap = Object.fromEntries(selectedLegacyVersions.map(version => {
       return [version, LEGACY_TAG_BY_VERSION[version] || ""]
     }))
   })
 
-  for (const version of REQUIREMENTS_VERSIONS) {
+  for (const version of selectedLegacyVersions) {
     test(`installs legacy version line ${version}`, async () => {
       const targetTag = versionTagMap[version]
       expect(targetTag).toBeTruthy()
@@ -187,7 +196,7 @@ integrationDescribe("Installation Integration", () => {
     })
   }
 
-  const tngTest = commandExists("php") && commandExists("composer") ? test : test.skip
+  const tngTest = runTngVariant && commandExists("php") && commandExists("composer") ? test : test.skip
   tngTest("installs tng branch", async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "icms-install-integration-"))
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
