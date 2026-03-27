@@ -26,6 +26,9 @@ export const services = {
       "@service.actions_core"
     ]
   },
+  "service.playwright_installer_client": {
+    class: "../Services/PlaywrightInstallerClientService.js"
+  },
   "factory.apache_container": {
     class: "../Factories/ApacheContainerFactory.js"
   },
@@ -45,7 +48,8 @@ export const services = {
       "@service.network",
       "@service.file_permission",
       "@service.impress_version",
-      "@factory.apache_container"
+      "@factory.apache_container",
+      "@service.playwright_installer_client"
     ],
     tags: [
       {name: "strategy"}

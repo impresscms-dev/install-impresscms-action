@@ -1,11 +1,8 @@
 import {existsSync, mkdirSync} from "node:fs"
 import path from "node:path"
 import {randomBytes} from "node:crypto"
-import {request as playwrightRequest} from "playwright"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
-import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
-import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
 import ImpressVersionRequirementsMissingError from "../Errors/ImpressVersionRequirementsMissingError.js"
 import RequirementsInfo from "../Config/RequirementsInfo.js"
 
@@ -21,13 +18,15 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
    * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
    * @param {import("../Factories/ApacheContainerFactory.js").default} apacheContainerFactory
+   * @param {import("../Services/PlaywrightInstallerClientService.js").default} playwrightInstallerClientService
    */
-  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory) {
+  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory, playwrightInstallerClientService) {
     super()
     this.networkService = networkService
     this.filePermissionService = filePermissionService
     this.impressVersionService = impressVersionService
     this.apacheContainerFactory = apacheContainerFactory
+    this.playwrightInstallerClientService = playwrightInstallerClientService
   }
 
   /**
@@ -139,7 +138,7 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   async runInstaller(baseUrl, paths, inputDto) {
     await this.networkService.waitForServer(`${baseUrl}/install/index.php`)
-    const client = await this.#createInstallerClient(baseUrl)
+    const client = await this.playwrightInstallerClientService.create(baseUrl)
 
     try {
       await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
@@ -214,52 +213,4 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
   }
 
-  /**
-   * @param {string} baseUrl
-   * @returns {Promise<{send: (pathname: string, options?: {method?: string, formData?: Record<string, string>, followRedirect?: boolean}) => Promise<import("playwright").APIResponse>, dispose: () => Promise<void>}>}
-   */
-  async #createInstallerClient(baseUrl) {
-    const requestContext = await playwrightRequest.newContext({
-      baseURL: baseUrl
-    })
-
-    /**
-     * @param {string} pathname
-     * @param {{method?: string, formData?: Record<string, string>, followRedirect?: boolean}} options
-     * @returns {Promise<import("playwright").APIResponse>}
-     */
-    const send = async (pathname, {method = "GET", formData = null, followRedirect = true} = {}) => {
-      const response = await requestContext.fetch(pathname, {
-        method,
-        form: formData ?? undefined,
-        maxRedirects: 0
-      })
-
-      const status = response.status()
-      if (status >= 300 && status < 400) {
-        const location = response.headers().location
-        if (!location) {
-          throw new RedirectLocationMissingError(pathname)
-        }
-        if (!followRedirect) {
-          return response
-        }
-        const redirectUrl = new URL(location, `${baseUrl}${pathname}`)
-        return await send(redirectUrl.pathname + redirectUrl.search, {method: "GET"})
-      }
-
-      if (status >= 400) {
-        const bodyText = await response.text()
-        throw new InstallerRequestFailedError(pathname, status, bodyText)
-      }
-
-      return response
-    }
-
-    const dispose = async () => {
-      await requestContext.dispose()
-    }
-
-    return {send, dispose}
-  }
 }
