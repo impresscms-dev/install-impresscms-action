@@ -1,9 +1,7 @@
 import {existsSync, mkdirSync, readFileSync} from "node:fs"
 import path from "node:path"
-import process from "node:process"
 import {randomBytes} from "node:crypto"
 import {request as playwrightRequest} from "playwright"
-import {GenericContainer} from "testcontainers"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
 import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
@@ -11,6 +9,8 @@ import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.j
 import ImpressVersionNotDetectedError from "../Errors/ImpressVersionNotDetectedError.js"
 import ImpressVersionRequirementsMissingError from "../Errors/ImpressVersionRequirementsMissingError.js"
 import NetworkService from "../Services/NetworkService.js"
+import FilePermissionService from "../Services/FilePermissionService.js"
+import ApacheContainerInstance from "../Infrastructure/ApacheContainerInstance.js"
 import RequirementsInfo from "../Config/RequirementsInfo.js"
 
 /**
@@ -18,55 +18,6 @@ import RequirementsInfo from "../Config/RequirementsInfo.js"
  * @returns {string}
  */
 const normalizePath = value => value.replaceAll("\\", "/")
-
-/**
- * @param {string} baseUrl
- * @returns {Promise<{send: (pathname: string, options?: {method?: string, formData?: Record<string, string>, followRedirect?: boolean}) => Promise<import("playwright").APIResponse>, dispose: () => Promise<void>}>}
- */
-const createInstallerClient = async baseUrl => {
-  const requestContext = await playwrightRequest.newContext({
-    baseURL: baseUrl
-  })
-
-  /**
-   * @param {string} pathname
-   * @param {{method?: string, formData?: Record<string, string>, followRedirect?: boolean}} options
-   * @returns {Promise<import("playwright").APIResponse>}
-   */
-  const send = async (pathname, {method = "GET", formData = null, followRedirect = true} = {}) => {
-    const response = await requestContext.fetch(pathname, {
-      method,
-      form: formData ?? undefined,
-      maxRedirects: 0
-    })
-
-    const status = response.status()
-    if (status >= 300 && status < 400) {
-      const location = response.headers().location
-      if (!location) {
-        throw new RedirectLocationMissingError(pathname)
-      }
-      if (!followRedirect) {
-        return response
-      }
-      const redirectUrl = new URL(location, `${baseUrl}${pathname}`)
-      return await send(redirectUrl.pathname + redirectUrl.search, {method: "GET"})
-    }
-
-    if (status >= 400) {
-      const bodyText = await response.text()
-      throw new InstallerRequestFailedError(pathname, status, bodyText)
-    }
-
-    return response
-  }
-
-  const dispose = async () => {
-    await requestContext.dispose()
-  }
-
-  return {send, dispose}
-}
 
 export default class DefaultStrategy extends AbstractStrategy {
   /**
@@ -90,12 +41,12 @@ export default class DefaultStrategy extends AbstractStrategy {
     const paths = this.resolveLegacyPaths()
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
-    const {baseUrl, container} = await this.startApacheContainer(paths)
+    const apacheServer = await this.startApacheContainer(paths)
 
     try {
-      await this.runInstaller(baseUrl, paths, inputDto)
+      await this.runInstaller(apacheServer.baseUrl, paths, inputDto)
     } finally {
-      await container.stop()
+      await apacheServer.stop()
     }
 
     return new ResultsDto({
@@ -132,7 +83,6 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @returns {Promise<void>}
    */
   async applyLegacyPermissions(paths) {
-    const {projectPath, runCommand} = this.context
     const chmodCandidates = [
       path.join(paths.htdocsPath, "cache"),
       path.join(paths.htdocsPath, "modules"),
@@ -142,20 +92,13 @@ export default class DefaultStrategy extends AbstractStrategy {
     ]
 
     for (const candidate of chmodCandidates) {
-      if (!existsSync(candidate)) {
-        continue
-      }
-      try {
-        await runCommand("chmod", ["-R", "0777", candidate], {cwd: projectPath, env: process.env})
-      } catch {
-        // Keep going, installer also does best-effort chmod internally.
-      }
+      FilePermissionService.chmodRecursive(candidate)
     }
   }
 
   /**
    * @param {{projectPath: string, htdocsPath: string, trustPath: string, containerRootPath: string, containerTrustPath: string}} paths
-   * @returns {Promise<{baseUrl: string, container: import("testcontainers").StartedTestContainer}>}
+   * @returns {Promise<ApacheContainerInstance>}
    */
   async startApacheContainer(paths) {
     const impressVersion = this.detectImpressVersion(paths.projectPath)
@@ -164,19 +107,13 @@ export default class DefaultStrategy extends AbstractStrategy {
       throw new ImpressVersionRequirementsMissingError(impressVersion)
     }
 
-    const container = await new GenericContainer(`php:${phpRequirements.max}-apache`)
-      .withExposedPorts(80)
-      .withBindMounts([
-        {source: paths.htdocsPath, target: paths.containerRootPath},
-        {source: paths.trustPath, target: paths.containerTrustPath}
-      ])
-      .withStartupTimeout(120000)
-      .start()
-
-    return {
-      baseUrl: `http://${container.getHost()}:${container.getMappedPort(80)}`,
-      container
-    }
+    return await ApacheContainerInstance.start({
+      phpVersion: phpRequirements.max,
+      htdocsPath: paths.htdocsPath,
+      trustPath: paths.trustPath,
+      containerRootPath: paths.containerRootPath,
+      containerTrustPath: paths.containerTrustPath
+    })
   }
 
   /**
@@ -216,7 +153,7 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   async runInstaller(baseUrl, paths, inputDto) {
     await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
-    const client = await createInstallerClient(baseUrl)
+    const client = await this.#createInstallerClient(baseUrl)
 
     try {
       await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
@@ -289,5 +226,54 @@ export default class DefaultStrategy extends AbstractStrategy {
       adminpass: inputDto.adminPass,
       adminpass2: inputDto.adminPass
     }
+  }
+
+  /**
+   * @param {string} baseUrl
+   * @returns {Promise<{send: (pathname: string, options?: {method?: string, formData?: Record<string, string>, followRedirect?: boolean}) => Promise<import("playwright").APIResponse>, dispose: () => Promise<void>}>}
+   */
+  async #createInstallerClient(baseUrl) {
+    const requestContext = await playwrightRequest.newContext({
+      baseURL: baseUrl
+    })
+
+    /**
+     * @param {string} pathname
+     * @param {{method?: string, formData?: Record<string, string>, followRedirect?: boolean}} options
+     * @returns {Promise<import("playwright").APIResponse>}
+     */
+    const send = async (pathname, {method = "GET", formData = null, followRedirect = true} = {}) => {
+      const response = await requestContext.fetch(pathname, {
+        method,
+        form: formData ?? undefined,
+        maxRedirects: 0
+      })
+
+      const status = response.status()
+      if (status >= 300 && status < 400) {
+        const location = response.headers().location
+        if (!location) {
+          throw new RedirectLocationMissingError(pathname)
+        }
+        if (!followRedirect) {
+          return response
+        }
+        const redirectUrl = new URL(location, `${baseUrl}${pathname}`)
+        return await send(redirectUrl.pathname + redirectUrl.search, {method: "GET"})
+      }
+
+      if (status >= 400) {
+        const bodyText = await response.text()
+        throw new InstallerRequestFailedError(pathname, status, bodyText)
+      }
+
+      return response
+    }
+
+    const dispose = async () => {
+      await requestContext.dispose()
+    }
+
+    return {send, dispose}
   }
 }

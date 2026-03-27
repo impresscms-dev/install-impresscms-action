@@ -1,4 +1,4 @@
-import {cpSync, mkdirSync} from "node:fs"
+import {cpSync, mkdirSync, rmSync} from "node:fs"
 import path from "node:path"
 import process from "node:process"
 
@@ -13,5 +13,6 @@ const rootPath = process.cwd()
 const srcPath = path.join(rootPath, "src")
 const distPath = path.join(rootPath, "dist")
 
+rmSync(distPath, {recursive: true, force: true})
 mkdirSync(distPath, {recursive: true})
 cpSync(srcPath, distPath, {recursive: true, force: true})
