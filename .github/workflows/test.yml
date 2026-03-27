@@ -9,31 +9,16 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  validate:
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - task: test
-            name: Run tests
-            command: test
-          - task: format-check
-            name: Check code formatting
-            command: format-check
-          - task: lint
-            name: Lint code
-            command: lint
-          - task: pack
-            name: Compile
-            command: pack
-      fail-fast: false
-    name: ${{ matrix.name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -49,5 +34,79 @@ jobs:
         env:
           CI: true
 
-      - name: ${{ matrix.name }}
-        run: npm run ${{ matrix.command }}
+      - name: Run tests
+        run: npm run test
+
+  format-check:
+    name: Check code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+        env:
+          CI: true
+
+      - name: Check code formatting
+        run: npm run format-check
+
+  lint:
+    name: Lint code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+        env:
+          CI: true
+
+      - name: Lint code
+        run: npm run lint
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    needs:
+      - test
+      - format-check
+      - lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Setup PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer:v2
+          extensions: curl, gd, pdo_mysql, json, mbstring, session
+          coverage: none
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration
