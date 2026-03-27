@@ -1,14 +1,17 @@
-import {existsSync, mkdirSync} from "node:fs"
+import {existsSync, mkdirSync, readFileSync} from "node:fs"
 import path from "node:path"
 import process from "node:process"
 import {randomBytes} from "node:crypto"
-import {spawn} from "node:child_process"
 import {request as playwrightRequest} from "playwright"
+import {GenericContainer} from "testcontainers"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
 import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
 import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
+import ImpressVersionNotDetectedError from "../Errors/ImpressVersionNotDetectedError.js"
+import ImpressVersionRequirementsMissingError from "../Errors/ImpressVersionRequirementsMissingError.js"
 import NetworkService from "../Services/NetworkService.js"
+import RequirementsInfo from "../Config/RequirementsInfo.js"
 
 /**
  * @param {string} value
@@ -87,12 +90,12 @@ export default class DefaultStrategy extends AbstractStrategy {
     const paths = this.resolveLegacyPaths()
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
-    const {baseUrl, phpServer} = await this.startPhpServer(paths.htdocsPath)
+    const {baseUrl, container} = await this.startApacheContainer(paths)
 
     try {
       await this.runInstaller(baseUrl, paths, inputDto)
     } finally {
-      phpServer.kill("SIGTERM")
+      await container.stop()
     }
 
     return new ResultsDto({
@@ -110,7 +113,9 @@ export default class DefaultStrategy extends AbstractStrategy {
     return {
       projectPath,
       htdocsPath: path.join(projectPath, "htdocs"),
-      trustPath: path.join(projectPath, "trust_path")
+      trustPath: path.join(projectPath, "trust_path"),
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path"
     }
   }
 
@@ -149,21 +154,58 @@ export default class DefaultStrategy extends AbstractStrategy {
   }
 
   /**
-   * @param {string} htdocsPath
-   * @returns {Promise<{baseUrl: string, phpServer: import("node:child_process").ChildProcessWithoutNullStreams}>}
+   * @param {{projectPath: string, htdocsPath: string, trustPath: string, containerRootPath: string, containerTrustPath: string}} paths
+   * @returns {Promise<{baseUrl: string, container: import("testcontainers").StartedTestContainer}>}
    */
-  async startPhpServer(htdocsPath) {
-    const port = await NetworkService.getFreePort()
-    const baseUrl = `http://127.0.0.1:${port}`
-    const phpServer = spawn("php", ["-S", `127.0.0.1:${port}`, "-t", htdocsPath], {
-      cwd: htdocsPath,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"]
-    })
-    phpServer.stdout.on("data", data => process.stdout.write(data.toString()))
-    phpServer.stderr.on("data", data => process.stderr.write(data.toString()))
+  async startApacheContainer(paths) {
+    const impressVersion = this.detectImpressVersion(paths.projectPath)
+    const phpRequirements = RequirementsInfo[impressVersion]
+    if (!phpRequirements) {
+      throw new ImpressVersionRequirementsMissingError(impressVersion)
+    }
 
-    return {baseUrl, phpServer}
+    const container = await new GenericContainer(`php:${phpRequirements.max}-apache`)
+      .withExposedPorts(80)
+      .withBindMounts([
+        {source: paths.htdocsPath, target: paths.containerRootPath},
+        {source: paths.trustPath, target: paths.containerTrustPath}
+      ])
+      .withStartupTimeout(120000)
+      .start()
+
+    return {
+      baseUrl: `http://${container.getHost()}:${container.getMappedPort(80)}`,
+      container
+    }
+  }
+
+  /**
+   * @param {string} projectPath
+   * @returns {string}
+   */
+  detectImpressVersion(projectPath) {
+    const versionFileCandidates = [
+      path.join(projectPath, "htdocs", "include", "version.php"),
+      path.join(projectPath, "include", "version.php")
+    ]
+
+    for (const filePath of versionFileCandidates) {
+      if (!existsSync(filePath)) {
+        continue
+      }
+
+      const contents = readFileSync(filePath, {encoding: "utf8"})
+      const fullVersionMatch = contents.match(/ImpressCMS\s+(\d+\.\d+(?:\.\d+)?)/i)
+      if (fullVersionMatch) {
+        const [, version] = fullVersionMatch
+        const [, major, minor] = version.match(/(\d+)\.(\d+)/) ?? []
+        if (major && minor) {
+          return `${major}.${minor}`
+        }
+      }
+    }
+
+    throw new ImpressVersionNotDetectedError()
   }
 
   /**
@@ -202,8 +244,8 @@ export default class DefaultStrategy extends AbstractStrategy {
   createPathSettingsFormData(paths, inputDto) {
     return {
       URL: inputDto.url,
-      ROOT_PATH: normalizePath(paths.htdocsPath),
-      TRUST_PATH: normalizePath(paths.trustPath)
+      ROOT_PATH: normalizePath(paths.containerRootPath),
+      TRUST_PATH: normalizePath(paths.containerTrustPath)
     }
   }
 

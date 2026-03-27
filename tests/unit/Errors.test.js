@@ -1,6 +1,8 @@
 import AbstractMethodNotImplementedError from "../../src/Errors/AbstractMethodNotImplementedError.js"
 import CommandFailedError from "../../src/Errors/CommandFailedError.js"
 import InstallerRequestFailedError from "../../src/Errors/InstallerRequestFailedError.js"
+import ImpressVersionNotDetectedError from "../../src/Errors/ImpressVersionNotDetectedError.js"
+import ImpressVersionRequirementsMissingError from "../../src/Errors/ImpressVersionRequirementsMissingError.js"
 import NoSupportedStrategyError from "../../src/Errors/NoSupportedStrategyError.js"
 import PathNotFoundError from "../../src/Errors/PathNotFoundError.js"
 import PhpServerNotReadyError from "../../src/Errors/PhpServerNotReadyError.js"
@@ -27,6 +29,18 @@ describe("Error classes", () => {
     expect(error.name).toBe("InstallerRequestFailedError")
     expect(error.message).toContain("HTTP 500")
     expect(error.message).toContain("boom")
+  })
+
+  test("ImpressVersionNotDetectedError", () => {
+    const error = new ImpressVersionNotDetectedError()
+    expect(error.name).toBe("ImpressVersionNotDetectedError")
+    expect(error.message).toBe("Unable to detect ImpressCMS version from checked out files")
+  })
+
+  test("ImpressVersionRequirementsMissingError", () => {
+    const error = new ImpressVersionRequirementsMissingError("9.9")
+    expect(error.name).toBe("ImpressVersionRequirementsMissingError")
+    expect(error.message).toBe("No PHP requirements mapping found for ImpressCMS version 9.9")
   })
 
   test("NoSupportedStrategyError", () => {
