@@ -96,6 +96,20 @@ This action outputs following data, that can be used in other actions:
 
 ## How to contribute?
 
+### Integration tests
+
+Repository contains Docker-based integration tests in `tests/integration/install.integration.test.js`.
+
+They install ImpressCMS for each legacy version line from `src/Config/RequirementsInfo.js` plus `tng` branch.
+
+Run manually:
+
+```bash
+RUN_INSTALLATION_INTEGRATION_TESTS=1 npm run test:integration
+```
+
+There is also manual GitHub workflow: `.github/workflows/integration.yml`.
+
 If you want to add some functionality or fix bugs, you can fork, change and create pull request. If you not sure how
 this works, try [interactive GitHub tutorial](https://skills.github.com).
 
