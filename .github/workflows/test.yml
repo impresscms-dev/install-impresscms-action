@@ -87,9 +87,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     needs:
-      - test
       - format-check
       - lint
+      - test
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
