@@ -77,12 +77,8 @@ const run = async () => {
   container.register("strategy.tng", TngStrategy, [context]).addTag("strategy")
   container.register("strategy.default", DefaultStrategy, [context]).addTag("strategy")
 
-  const strategies = []
   for (const taggedService of container.findTaggedServiceIds("strategy")) {
-    strategies.push(container.get(taggedService.id))
-  }
-
-  for (const strategy of strategies) {
+    const strategy = container.get(taggedService.id)
     const supported = await strategy.isSupported(inputDto)
     if (!supported) {
       continue
