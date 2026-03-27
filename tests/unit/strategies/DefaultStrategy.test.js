@@ -41,7 +41,8 @@ describe("DefaultStrategy", () => {
       {chmodRecursive: jest.fn()},
       {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
-      {build: jest.fn()}
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
     )
 
     await expect(strategy.isSupported({}, "/repo")).resolves.toBe(true)
@@ -59,7 +60,8 @@ describe("DefaultStrategy", () => {
       {chmodRecursive: jest.fn()},
       {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
-      {build: jest.fn()}
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
     )
 
     await expect(strategy.isSupported({}, "/repo")).resolves.toBe(false)
@@ -74,7 +76,8 @@ describe("DefaultStrategy", () => {
       {chmodRecursive: jest.fn()},
       {detect: jest.fn().mockReturnValue("2.0")},
       apacheContainerFactory,
-      {build: jest.fn()}
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
     )
 
     const paths = {
@@ -110,7 +113,8 @@ describe("DefaultStrategy", () => {
       {chmodRecursive: jest.fn()},
       {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
-      {build: jest.fn().mockReturnValue(client)}
+      {build: jest.fn().mockReturnValue(client)},
+      {uploadFailureArtifacts: jest.fn()}
     )
 
     await strategy.runInstaller("http://localhost:8080", {
@@ -124,6 +128,34 @@ describe("DefaultStrategy", () => {
     expect(client.stop).toHaveBeenCalledTimes(1)
   })
 
+  test("runInstaller uploads playwright artifacts on failure", async () => {
+    const networkService = {waitForServer: jest.fn().mockResolvedValue(undefined)}
+    const expectedError = new Error("playwright failed")
+    const client = {
+      start: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn().mockRejectedValue(expectedError),
+      stop: jest.fn().mockResolvedValue(undefined)
+    }
+    const playwrightArtifactsService = {uploadFailureArtifacts: jest.fn().mockResolvedValue(undefined)}
+    const {DefaultStrategy} = await loadStrategy()
+    const strategy = new DefaultStrategy(
+      networkService,
+      {chmodRecursive: jest.fn()},
+      {detect: jest.fn().mockReturnValue("2.0")},
+      {build: jest.fn()},
+      {build: jest.fn().mockReturnValue(client)},
+      playwrightArtifactsService
+    )
+
+    await expect(strategy.runInstaller("http://localhost:8080", {
+      containerRootPath: "/var/www/html",
+      containerTrustPath: "/var/www/trust_path"
+    }, createInputDto())).rejects.toThrow("playwright failed")
+
+    expect(playwrightArtifactsService.uploadFailureArtifacts).toHaveBeenCalledWith(client)
+    expect(client.stop).toHaveBeenCalledTimes(1)
+  })
+
   test("apply returns results dto and always stops apache server", async () => {
     const {DefaultStrategy} = await loadStrategy()
     const strategy = new DefaultStrategy(
@@ -131,7 +163,8 @@ describe("DefaultStrategy", () => {
       {chmodRecursive: jest.fn()},
       {detect: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
-      {build: jest.fn()}
+      {build: jest.fn()},
+      {uploadFailureArtifacts: jest.fn()}
     )
     const apacheServer = {
       baseUrl: "http://localhost:8080",

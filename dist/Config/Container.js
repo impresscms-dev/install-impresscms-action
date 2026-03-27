@@ -32,6 +32,12 @@ export const services = {
       "@service.actions_core"
     ]
   },
+  "service.playwright_artifacts": {
+    class: "../Services/PlaywrightArtifactsService.js",
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
   "factory.apache_container": {
     class: "../Factories/ApacheContainerFactory.js"
   },
@@ -56,7 +62,8 @@ export const services = {
       "@service.file_permission",
       "@service.impress_version",
       "@factory.apache_container",
-      "@factory.playwright_installer_client"
+      "@factory.playwright_installer_client",
+      "@service.playwright_artifacts"
     ],
     tags: [
       {name: "strategy"}

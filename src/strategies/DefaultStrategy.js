@@ -19,14 +19,16 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
    * @param {import("../Factories/ApacheContainerFactory.js").default} apacheContainerFactory
    * @param {import("../Factories/PlaywrightInstallerClientFactory.js").default} playwrightInstallerClientFactory
+   * @param {import("../Services/PlaywrightArtifactsService.js").default} playwrightArtifactsService
    */
-  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory, playwrightInstallerClientFactory) {
+  constructor(networkService, filePermissionService, impressVersionService, apacheContainerFactory, playwrightInstallerClientFactory, playwrightArtifactsService) {
     super()
     this.networkService = networkService
     this.filePermissionService = filePermissionService
     this.impressVersionService = impressVersionService
     this.apacheContainerFactory = apacheContainerFactory
     this.playwrightInstallerClientFactory = playwrightInstallerClientFactory
+    this.playwrightArtifactsService = playwrightArtifactsService
   }
 
   /**
@@ -156,6 +158,9 @@ export default class DefaultStrategy extends AbstractStrategy {
       await client.send("/install/page_tablesfill.php", {method: "POST", formData: {}})
       await client.send("/install/page_modulesinstall.php", {method: "POST", formData: {mod: "0"}})
       await client.send("/install/page_end.php")
+    } catch (error) {
+      await this.playwrightArtifactsService.uploadFailureArtifacts(client)
+      throw error
     } finally {
       await client.stop()
     }

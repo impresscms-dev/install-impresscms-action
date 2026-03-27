@@ -1,3 +1,4 @@
+import {join} from "node:path"
 import {jest} from "@jest/globals"
 
 const createResponse = ({
@@ -10,7 +11,14 @@ const createResponse = ({
   text: async () => text
 })
 
-const loadInstance = async ({fetchImpl = jest.fn(), disposeImpl = jest.fn()} = {}) => {
+const loadInstance = async ({
+  fetchImpl = jest.fn(),
+  disposeImpl = jest.fn(),
+  mkdirImpl = jest.fn().mockResolvedValue(undefined),
+  writeFileImpl = jest.fn().mockResolvedValue(undefined),
+  gotoImpl = jest.fn().mockResolvedValue(undefined),
+  screenshotImpl = jest.fn().mockResolvedValue(undefined)
+} = {}) => {
   jest.resetModules()
 
   const requestContext = {
@@ -18,13 +26,30 @@ const loadInstance = async ({fetchImpl = jest.fn(), disposeImpl = jest.fn()} = {
     dispose: disposeImpl
   }
   const newContext = jest.fn().mockResolvedValue(requestContext)
+  const page = {
+    on: jest.fn(),
+    goto: gotoImpl,
+    screenshot: screenshotImpl
+  }
+  const browser = {
+    newPage: jest.fn().mockResolvedValue(page),
+    close: jest.fn().mockResolvedValue(undefined)
+  }
+  const launch = jest.fn().mockResolvedValue(browser)
+  const mkdir = jest.fn(mkdirImpl)
+  const writeFile = jest.fn(writeFileImpl)
 
   jest.unstable_mockModule("playwright", () => ({
-    request: {newContext}
+    request: {newContext},
+    chromium: {launch}
+  }))
+  jest.unstable_mockModule("node:fs/promises", () => ({
+    mkdir,
+    writeFile
   }))
 
   const {default: PlaywrightInstallerClientInstance} = await import("../../../src/Infrastructure/PlaywrightInstallerClientInstance.js")
-  return {PlaywrightInstallerClientInstance, newContext, requestContext}
+  return {PlaywrightInstallerClientInstance, newContext, requestContext, launch, page, browser, mkdir, writeFile}
 }
 
 describe("PlaywrightInstallerClientInstance", () => {
@@ -129,5 +154,58 @@ describe("PlaywrightInstallerClientInstance", () => {
 
     expect(disposeImpl).toHaveBeenCalledTimes(1)
     expect(newContext).toHaveBeenCalledTimes(2)
+  })
+
+  test("captureFailureArtifacts writes request and console logs with screenshot", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(createResponse({status: 200}))
+    const {PlaywrightInstallerClientInstance, launch, page, mkdir, writeFile} = await loadInstance({fetchImpl})
+    const instance = new PlaywrightInstallerClientInstance("http://localhost:1234")
+    await instance.send("/install/page_start.php")
+
+    const artifactsDirectory = "/tmp/icms-pw-artifacts"
+    const {files, rootDirectory} = await instance.captureFailureArtifacts(artifactsDirectory)
+
+    expect(rootDirectory).toBe(artifactsDirectory)
+    expect(files).toEqual(expect.arrayContaining([
+      join(artifactsDirectory, "playwright-request.log"),
+      join(artifactsDirectory, "playwright-console.log"),
+      join(artifactsDirectory, "playwright-screenshot.png")
+    ]))
+    expect(launch).toHaveBeenCalledWith({headless: true})
+    expect(page.goto).toHaveBeenCalledWith("http://localhost:1234/install/page_start.php", {
+      waitUntil: "domcontentloaded",
+      timeout: 15000
+    })
+    expect(mkdir).toHaveBeenCalledWith(artifactsDirectory, {recursive: true})
+    expect(writeFile).toHaveBeenCalledWith(
+      join(artifactsDirectory, "playwright-request.log"),
+      expect.stringContaining("GET /install/page_start.php -> 200"),
+      {encoding: "utf8"}
+    )
+  })
+
+  test("captureFailureArtifacts logs screenshot failure and returns log files", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(createResponse({status: 200}))
+    const launchError = new Error("browser failed")
+    const {PlaywrightInstallerClientInstance, writeFile} = await loadInstance({
+      fetchImpl,
+      gotoImpl: jest.fn().mockRejectedValue(launchError)
+    })
+    const instance = new PlaywrightInstallerClientInstance("http://localhost:1234")
+    await instance.send("/install/page_start.php")
+
+    const artifactsDirectory = "/tmp/icms-pw-artifacts"
+    const {files} = await instance.captureFailureArtifacts(artifactsDirectory)
+
+    expect(files).toEqual(expect.arrayContaining([
+      join(artifactsDirectory, "playwright-request.log"),
+      join(artifactsDirectory, "playwright-console.log")
+    ]))
+    expect(files).not.toContain(join(artifactsDirectory, "playwright-screenshot.png"))
+    expect(writeFile).toHaveBeenCalledWith(
+      join(artifactsDirectory, "playwright-console.log"),
+      expect.stringContaining("Screenshot capture failed: browser failed"),
+      {encoding: "utf8"}
+    )
   })
 })
