@@ -1,4 +1,3 @@
-import {ContainerBuilder, Reference} from "node-dependency-injection"
 import ActionsCoreService from "../Services/ActionsCoreService.js"
 import GitHubContextService from "../Services/GitHubContextService.js"
 import InputDtoFactory from "../Factories/InputDtoFactory.js"
@@ -12,59 +11,79 @@ import PlaywrightInstallerClientFactory from "../Factories/PlaywrightInstallerCl
 import TngStrategy from "../strategies/TngStrategy.js"
 import DefaultStrategy from "../strategies/DefaultStrategy.js"
 
-/**
- * @returns {ContainerBuilder}
- */
-export default function buildContainer() {
-  const container = new ContainerBuilder()
-
-  container.register("service.actions_core", ActionsCoreService)
-  container.register("service.github_context", GitHubContextService)
-
-  container
-    .register("factory.input_dto", InputDtoFactory)
-    .addArgument(new Reference("service.actions_core"))
-
-  container
-    .register("service.file_permission", FilePermissionService)
-    .addArgument(new Reference("service.actions_core"))
-
-  container
-    .register("service.command_runner", CommandRunnerService)
-    .addArgument(new Reference("service.actions_core"))
-
-  container
-    .register("service.network", NetworkService)
-    .addArgument(new Reference("service.actions_core"))
-
-  container
-    .register("service.impress_version", ImpressVersionService)
-    .addArgument(new Reference("service.actions_core"))
-
-  container
-    .register("service.playwright_artifacts", PlaywrightArtifactsService)
-    .addArgument(new Reference("service.actions_core"))
-    .addArgument(new Reference("service.github_context"))
-
-  container.register("factory.apache_container", ApacheContainerFactory)
-  container.register("factory.playwright_installer_client", PlaywrightInstallerClientFactory)
-
-  container
-    .register("strategy.tng", TngStrategy)
-    .addArgument(new Reference("service.file_permission"))
-    .addArgument(new Reference("service.command_runner"))
-    .addArgument(new Reference("service.impress_version"))
-    .addTag("strategy")
-
-  container
-    .register("strategy.default", DefaultStrategy)
-    .addArgument(new Reference("service.network"))
-    .addArgument(new Reference("service.file_permission"))
-    .addArgument(new Reference("service.impress_version"))
-    .addArgument(new Reference("factory.apache_container"))
-    .addArgument(new Reference("factory.playwright_installer_client"))
-    .addArgument(new Reference("service.playwright_artifacts"))
-    .addTag("strategy")
-
-  return container
+export const services = {
+  "service.actions_core": {
+    class: ActionsCoreService
+  },
+  "service.github_context": {
+    class: GitHubContextService
+  },
+  "factory.input_dto": {
+    class: InputDtoFactory,
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
+  "service.file_permission": {
+    class: FilePermissionService,
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
+  "service.command_runner": {
+    class: CommandRunnerService,
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
+  "service.network": {
+    class: NetworkService,
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
+  "service.impress_version": {
+    class: ImpressVersionService,
+    arguments: [
+      "@service.actions_core"
+    ]
+  },
+  "service.playwright_artifacts": {
+    class: PlaywrightArtifactsService,
+    arguments: [
+      "@service.actions_core",
+      "@service.github_context"
+    ]
+  },
+  "factory.apache_container": {
+    class: ApacheContainerFactory
+  },
+  "factory.playwright_installer_client": {
+    class: PlaywrightInstallerClientFactory
+  },
+  "strategy.tng": {
+    class: TngStrategy,
+    arguments: [
+      "@service.file_permission",
+      "@service.command_runner",
+      "@service.impress_version"
+    ],
+    tags: [
+      {name: "strategy"}
+    ]
+  },
+  "strategy.default": {
+    class: DefaultStrategy,
+    arguments: [
+      "@service.network",
+      "@service.file_permission",
+      "@service.impress_version",
+      "@factory.apache_container",
+      "@factory.playwright_installer_client",
+      "@service.playwright_artifacts"
+    ],
+    tags: [
+      {name: "strategy"}
+    ]
+  }
 }
