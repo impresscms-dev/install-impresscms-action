@@ -62,7 +62,7 @@ const runCommand = async (command, args, options = {}) => await new Promise((res
 
 const run = async () => {
   const inputDto = InputDto.fromActionInput(getInput)
-  const projectPath = path.resolve(inputDto.getPath())
+  const projectPath = path.resolve(inputDto.path)
   if (!existsSync(projectPath)) {
     throw new PathNotFoundError(projectPath)
   }

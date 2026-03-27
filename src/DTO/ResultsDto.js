@@ -22,21 +22,21 @@ export default class ResultsDto {
   /**
    * @returns {string}
    */
-  getAppKey() {
+  get appKey() {
     return this.#data.appKey
   }
 
   /**
    * @returns {boolean}
    */
-  getUsesComposer() {
+  get usesComposer() {
     return this.#data.usesComposer
   }
 
   /**
    * @returns {boolean}
    */
-  getUsesPhoenix() {
+  get usesPhoenix() {
     return this.#data.usesPhoenix
   }
 
@@ -46,8 +46,8 @@ export default class ResultsDto {
    * @param {(name: string, value: string | boolean) => void} setOutput
    */
   applyOutputs(setOutput) {
-    setOutput("app_key", this.getAppKey())
-    setOutput("uses_composer", this.getUsesComposer())
-    setOutput("uses_phoenix", this.getUsesPhoenix())
+    setOutput("app_key", this.appKey)
+    setOutput("uses_composer", this.usesComposer)
+    setOutput("uses_phoenix", this.usesPhoenix)
   }
 }

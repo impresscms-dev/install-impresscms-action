@@ -24,7 +24,7 @@ export default class TngStrategy extends AbstractStrategy {
    */
   async apply(inputDto) {
     await this.installComposerDependencies()
-    const appKey = await this.resolveAppKey(inputDto.getAppKey())
+    const appKey = await this.resolveAppKey(inputDto.appKey)
     this.ensureWritableFolders()
     await this.runPhoenixMigrations(this.createPhoenixEnvironment(inputDto, appKey))
 
@@ -96,22 +96,22 @@ export default class TngStrategy extends AbstractStrategy {
   createPhoenixEnvironment(inputDto, appKey) {
     return {
       ...process.env,
-      URL: inputDto.getUrl(),
-      DB_TYPE: inputDto.getDatabaseType(),
-      DB_HOST: inputDto.getDatabaseHost(),
-      DB_USER: inputDto.getDatabaseUser(),
-      DB_PASS: inputDto.getDatabasePassword(),
+      URL: inputDto.url,
+      DB_TYPE: inputDto.databaseType,
+      DB_HOST: inputDto.databaseHost,
+      DB_USER: inputDto.databaseUser,
+      DB_PASS: inputDto.databasePassword,
       DB_PCONNECT: "0",
-      DB_NAME: inputDto.getDatabaseName(),
-      DB_CHARSET: inputDto.getDatabaseCharset(),
-      DB_COLLATION: inputDto.getDatabaseCollation(),
-      DB_PREFIX: inputDto.getDatabasePrefix(),
-      DB_PORT: inputDto.getDatabasePort(),
-      INSTALL_ADMIN_PASS: inputDto.getAdminName(),
-      INSTALL_ADMIN_LOGIN: inputDto.getAdminLogin(),
-      INSTALL_ADMIN_NAME: inputDto.getAdminPass(),
-      INSTALL_ADMIN_EMAIL: inputDto.getAdminEmail(),
-      INSTALL_LANGUAGE: inputDto.getLanguage(),
+      DB_NAME: inputDto.databaseName,
+      DB_CHARSET: inputDto.databaseCharset,
+      DB_COLLATION: inputDto.databaseCollation,
+      DB_PREFIX: inputDto.databasePrefix,
+      DB_PORT: inputDto.databasePort,
+      INSTALL_ADMIN_PASS: inputDto.adminName,
+      INSTALL_ADMIN_LOGIN: inputDto.adminLogin,
+      INSTALL_ADMIN_NAME: inputDto.adminPass,
+      INSTALL_ADMIN_EMAIL: inputDto.adminEmail,
+      INSTALL_LANGUAGE: inputDto.language,
       APP_KEY: appKey
     }
   }

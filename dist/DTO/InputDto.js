@@ -92,119 +92,119 @@ export default class InputDto {
   /**
    * @returns {string}
    */
-  getUrl() {
+  get url() {
     return this.#data.url
   }
 
   /**
    * @returns {string}
    */
-  getDatabaseType() {
+  get databaseType() {
     return this.#data.databaseType
   }
 
   /**
    * @returns {string}
    */
-  getDatabaseHost() {
+  get databaseHost() {
     return this.#data.databaseHost
   }
 
   /**
    * @returns {string}
    */
-  getDatabaseUser() {
+  get databaseUser() {
     return this.#data.databaseUser
   }
 
   /**
    * @returns {string}
    */
-  getDatabasePassword() {
+  get databasePassword() {
     return this.#data.databasePassword
   }
 
   /**
    * @returns {string}
    */
-  getDatabaseName() {
+  get databaseName() {
     return this.#data.databaseName
   }
 
   /**
    * @returns {string}
    */
-  getDatabaseCharset() {
+  get databaseCharset() {
     return this.#data.databaseCharset
   }
 
   /**
    * @returns {string}
    */
-  getDatabaseCollation() {
+  get databaseCollation() {
     return this.#data.databaseCollation
   }
 
   /**
    * @returns {string}
    */
-  getDatabasePrefix() {
+  get databasePrefix() {
     return this.#data.databasePrefix
   }
 
   /**
    * @returns {string}
    */
-  getDatabasePort() {
+  get databasePort() {
     return this.#data.databasePort
   }
 
   /**
    * @returns {string}
    */
-  getAdminName() {
+  get adminName() {
     return this.#data.adminName
   }
 
   /**
    * @returns {string}
    */
-  getAdminLogin() {
+  get adminLogin() {
     return this.#data.adminLogin
   }
 
   /**
    * @returns {string}
    */
-  getAdminPass() {
+  get adminPass() {
     return this.#data.adminPass
   }
 
   /**
    * @returns {string}
    */
-  getAdminEmail() {
+  get adminEmail() {
     return this.#data.adminEmail
   }
 
   /**
    * @returns {string}
    */
-  getLanguage() {
+  get language() {
     return this.#data.language
   }
 
   /**
    * @returns {string}
    */
-  getAppKey() {
+  get appKey() {
     return this.#data.appKey
   }
 
   /**
    * @returns {string}
    */
-  getPath() {
+  get path() {
     return this.#data.path
   }
 }
