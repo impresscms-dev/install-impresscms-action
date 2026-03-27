@@ -1,6 +1,6 @@
 import ApacheContainerInstance from "../Infrastructure/ApacheContainerInstance.js"
 
-export default class ApacheContainerBuilder {
+export default class ApacheContainerFactory {
   /**
    * @param {object} params
    * @param {string} params.phpVersion

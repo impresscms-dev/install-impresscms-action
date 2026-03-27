@@ -11,7 +11,7 @@ import DefaultStrategy from "./strategies/DefaultStrategy.js"
 import FilePermissionService from "./Services/FilePermissionService.js"
 import NetworkService from "./Services/NetworkService.js"
 import ImpressVersionService from "./Services/ImpressVersionService.js"
-import ApacheContainerBuilder from "./Builders/ApacheContainerBuilder.js"
+import ApacheContainerFactory from "./Factories/ApacheContainerFactory.js"
 import CommandFailedError from "./Errors/CommandFailedError.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
@@ -81,7 +81,7 @@ const run = async () => {
   container.register("service.file_permission", FilePermissionService)
   container.register("service.network", NetworkService)
   container.register("service.impress_version", ImpressVersionService)
-  container.register("builder.apache_container", ApacheContainerBuilder)
+  container.register("factory.apache_container", ApacheContainerFactory)
 
   container.register("strategy.tng", TngStrategy, [
     context,
@@ -93,7 +93,7 @@ const run = async () => {
     new Reference("service.network"),
     new Reference("service.file_permission"),
     new Reference("service.impress_version"),
-    new Reference("builder.apache_container")
+    new Reference("factory.apache_container")
   ]).addTag("strategy")
 
   for (const taggedService of container.findTaggedServiceIds("strategy")) {

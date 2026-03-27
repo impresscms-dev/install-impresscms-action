@@ -21,14 +21,14 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @param {import("../Services/NetworkService.js").default} networkService
    * @param {import("../Services/FilePermissionService.js").default} filePermissionService
    * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
-   * @param {import("../Builders/ApacheContainerBuilder.js").default} apacheContainerBuilder
+   * @param {import("../Factories/ApacheContainerFactory.js").default} apacheContainerFactory
    */
-  constructor(context, networkService, filePermissionService, impressVersionService, apacheContainerBuilder) {
+  constructor(context, networkService, filePermissionService, impressVersionService, apacheContainerFactory) {
     super(context)
     this.networkService = networkService
     this.filePermissionService = filePermissionService
     this.impressVersionService = impressVersionService
-    this.apacheContainerBuilder = apacheContainerBuilder
+    this.apacheContainerFactory = apacheContainerFactory
   }
 
   /**
@@ -118,7 +118,7 @@ export default class DefaultStrategy extends AbstractStrategy {
       throw new ImpressVersionRequirementsMissingError(impressVersion)
     }
 
-    const apacheContainer = this.apacheContainerBuilder.build({
+    const apacheContainer = this.apacheContainerFactory.build({
       phpVersion: phpRequirements.max,
       htdocsPath: paths.htdocsPath,
       trustPath: paths.trustPath,
