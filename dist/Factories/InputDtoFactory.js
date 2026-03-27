@@ -12,34 +12,24 @@ export default class InputDtoFactory {
    * @returns {InputDto}
    */
   create() {
-    /**
-     * @param {string} name
-     * @param {string} fallback
-     * @returns {string}
-     */
-    const read = (name, fallback) => {
-      const value = this.actionsCore.getInput(name)
-      return value === "" ? fallback : value
-    }
-
     return new InputDto({
-      url: read("url", "http://localhost"),
-      databaseType: read("database_type", "pdo.mysql"),
-      databaseHost: read("database_host", "127.0.0.1"),
-      databaseUser: read("database_user", ""),
-      databasePassword: read("database_password", ""),
-      databaseName: read("database_name", "icms"),
-      databaseCharset: read("database_charset", "utf8"),
-      databaseCollation: read("database_collation", "utf8_general_ci"),
-      databasePrefix: read("database_prefix", "icms"),
-      databasePort: read("database_port", "3306"),
-      adminName: read("admin_name", "icms"),
-      adminLogin: read("admin_login", "icms"),
-      adminPass: read("admin_pass", "icms"),
-      adminEmail: read("admin_email", "noreply@impresscms.dev"),
-      language: read("language", "english"),
-      appKey: read("app_key", ""),
-      path: read("path", ".")
+      url: this.actionsCore.getInput("url") || "http://localhost",
+      databaseType: this.actionsCore.getInput("database_type") || "pdo.mysql",
+      databaseHost: this.actionsCore.getInput("database_host") || "127.0.0.1",
+      databaseUser: this.actionsCore.getInput("database_user") || "",
+      databasePassword: this.actionsCore.getInput("database_password") || "",
+      databaseName: this.actionsCore.getInput("database_name") || "icms",
+      databaseCharset: this.actionsCore.getInput("database_charset") || "utf8",
+      databaseCollation: this.actionsCore.getInput("database_collation") || "utf8_general_ci",
+      databasePrefix: this.actionsCore.getInput("database_prefix") || "icms",
+      databasePort: this.actionsCore.getInput("database_port") || "3306",
+      adminName: this.actionsCore.getInput("admin_name") || "icms",
+      adminLogin: this.actionsCore.getInput("admin_login") || "icms",
+      adminPass: this.actionsCore.getInput("admin_pass") || "icms",
+      adminEmail: this.actionsCore.getInput("admin_email") || "noreply@impresscms.dev",
+      language: this.actionsCore.getInput("language") || "english",
+      appKey: this.actionsCore.getInput("app_key") || "",
+      path: this.actionsCore.getInput("path") || "."
     })
   }
 }
