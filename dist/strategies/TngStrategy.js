@@ -15,26 +15,45 @@ export default class TngStrategy extends AbstractStrategy {
   }
 
   async apply(inputDto) {
-    const {projectPath, runCommand} = this.context
+    await this.installComposerDependencies()
+    const appKey = await this.resolveAppKey(inputDto.appKey)
+    this.ensureWritableFolders()
+    await this.runPhoenixMigrations(this.createPhoenixEnvironment(inputDto, appKey))
 
+    return new ResultsDto({
+      appKey,
+      usesComposer: true,
+      usesPhoenix: true
+    })
+  }
+
+  async installComposerDependencies() {
+    const {projectPath, runCommand} = this.context
     await runCommand("composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], {
       cwd: projectPath,
       env: process.env
     })
+  }
 
-    let appKey = inputDto.appKey
-    if (!appKey) {
-      try {
-        const result = await runCommand("php", ["./bin/console", "generate:app:key"], {
-          cwd: projectPath,
-          env: process.env
-        })
-        appKey = result.stdout.trim().split(/\r?\n/).filter(Boolean).at(-1) ?? ""
-      } catch {
-        appKey = ""
-      }
+  async resolveAppKey(configuredAppKey) {
+    if (configuredAppKey) {
+      return configuredAppKey
     }
 
+    const {projectPath, runCommand} = this.context
+    try {
+      const result = await runCommand("php", ["./bin/console", "generate:app:key"], {
+        cwd: projectPath,
+        env: process.env
+      })
+      return result.stdout.trim().split(/\r?\n/).filter(Boolean).at(-1) ?? ""
+    } catch {
+      return ""
+    }
+  }
+
+  ensureWritableFolders() {
+    const {projectPath} = this.context
     const foldersToChmod = [
       "storage",
       "modules",
@@ -49,8 +68,10 @@ export default class TngStrategy extends AbstractStrategy {
     for (const folderPath of foldersToChmod) {
       FilePermissionService.chmodRecursive(path.join(projectPath, folderPath))
     }
+  }
 
-    const env = {
+  createPhoenixEnvironment(inputDto, appKey) {
+    return {
       ...process.env,
       URL: inputDto.url,
       DB_TYPE: inputDto.databaseType,
@@ -70,16 +91,13 @@ export default class TngStrategy extends AbstractStrategy {
       INSTALL_LANGUAGE: inputDto.language,
       APP_KEY: appKey
     }
+  }
 
+  async runPhoenixMigrations(environment) {
+    const {projectPath, runCommand} = this.context
     await runCommand("./bin/phoenix", ["migrate", "-vvv"], {
       cwd: projectPath,
-      env
-    })
-
-    return new ResultsDto({
-      appKey,
-      usesComposer: true,
-      usesPhoenix: true
+      env: environment
     })
   }
 }

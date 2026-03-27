@@ -67,19 +67,47 @@ export default class DefaultStrategy extends AbstractStrategy {
   }
 
   async apply(inputDto) {
-    const {projectPath, runCommand} = this.context
-    const htdocsPath = path.join(projectPath, "htdocs")
-    const trustPath = path.join(projectPath, "trust_path")
+    const paths = this.resolveLegacyPaths()
+    this.ensureTrustPath(paths.trustPath)
+    await this.applyLegacyPermissions(paths)
+    const {baseUrl, phpServer} = await this.startPhpServer(paths.htdocsPath)
 
+    try {
+      await this.runInstaller(baseUrl, paths, inputDto)
+    } finally {
+      phpServer.kill("SIGTERM")
+    }
+
+    return new ResultsDto({
+      appKey: inputDto.appKey,
+      usesComposer: false,
+      usesPhoenix: false
+    })
+  }
+
+  resolveLegacyPaths() {
+    const {projectPath} = this.context
+    return {
+      projectPath,
+      htdocsPath: path.join(projectPath, "htdocs"),
+      trustPath: path.join(projectPath, "trust_path")
+    }
+  }
+
+  ensureTrustPath(trustPath) {
     mkdirSync(trustPath, {recursive: true})
+  }
 
+  async applyLegacyPermissions(paths) {
+    const {projectPath, runCommand} = this.context
     const chmodCandidates = [
-      path.join(htdocsPath, "cache"),
-      path.join(htdocsPath, "modules"),
-      path.join(htdocsPath, "templates_c"),
-      path.join(htdocsPath, "uploads"),
-      trustPath
+      path.join(paths.htdocsPath, "cache"),
+      path.join(paths.htdocsPath, "modules"),
+      path.join(paths.htdocsPath, "templates_c"),
+      path.join(paths.htdocsPath, "uploads"),
+      paths.trustPath
     ]
+
     for (const candidate of chmodCandidates) {
       if (!existsSync(candidate)) {
         continue
@@ -90,7 +118,9 @@ export default class DefaultStrategy extends AbstractStrategy {
         // Keep going, installer also does best-effort chmod internally.
       }
     }
+  }
 
+  async startPhpServer(htdocsPath) {
     const port = await NetworkService.getFreePort()
     const baseUrl = `http://127.0.0.1:${port}`
     const phpServer = spawn("php", ["-S", `127.0.0.1:${port}`, "-t", htdocsPath], {
@@ -101,87 +131,62 @@ export default class DefaultStrategy extends AbstractStrategy {
     phpServer.stdout.on("data", data => process.stdout.write(data.toString()))
     phpServer.stderr.on("data", data => process.stderr.write(data.toString()))
 
-    try {
-      await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
-      const client = createInstallerClient(baseUrl)
+    return {baseUrl, phpServer}
+  }
 
-      await client.send("/install/page_langselect.php", {
-        method: "POST",
-        formData: {
-          lang: inputDto.language
-        }
-      })
-      await client.send("/install/page_start.php")
-      await client.send("/install/page_modcheck.php")
+  async runInstaller(baseUrl, paths, inputDto) {
+    await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
+    const client = createInstallerClient(baseUrl)
 
-      await client.send("/install/page_pathsettings.php", {
-        method: "POST",
-        formData: {
-          URL: inputDto.url,
-          ROOT_PATH: normalizePath(htdocsPath),
-          TRUST_PATH: normalizePath(trustPath)
-        }
-      })
+    await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
+    await client.send("/install/page_start.php")
+    await client.send("/install/page_modcheck.php")
+    await client.send("/install/page_pathsettings.php", {method: "POST", formData: this.createPathSettingsFormData(paths, inputDto)})
+    await client.send("/install/page_dbconnection.php", {method: "POST", formData: this.createDbConnectionFormData(inputDto)})
+    await client.send("/install/page_dbsettings.php", {method: "POST", formData: this.createDbSettingsFormData(inputDto)})
+    await client.send("/install/page_configsave.php", {method: "POST", formData: {}})
+    await client.send("/install/page_tablescreate.php", {method: "POST", formData: {}})
+    await client.send("/install/page_siteinit.php", {method: "POST", formData: this.createSiteInitFormData(inputDto)})
+    await client.send("/install/page_tablesfill.php", {method: "POST", formData: {}})
+    await client.send("/install/page_modulesinstall.php", {method: "POST", formData: {mod: "0"}})
+    await client.send("/install/page_end.php")
+  }
 
-      await client.send("/install/page_dbconnection.php", {
-        method: "POST",
-        formData: {
-          DB_TYPE: inputDto.databaseType,
-          DB_HOST: inputDto.databaseHost,
-          DB_USER: inputDto.databaseUser,
-          DB_PASS: inputDto.databasePassword,
-          DB_PCONNECT: "0"
-        }
-      })
-
-      await client.send("/install/page_dbsettings.php", {
-        method: "POST",
-        formData: {
-          DB_NAME: inputDto.databaseName,
-          DB_CHARSET: inputDto.databaseCharset,
-          DB_COLLATION: inputDto.databaseCollation,
-          DB_PREFIX: inputDto.databasePrefix,
-          DB_SALT: randomBytes(16).toString("hex")
-        }
-      })
-
-      await client.send("/install/page_configsave.php", {
-        method: "POST",
-        formData: {}
-      })
-      await client.send("/install/page_tablescreate.php", {
-        method: "POST",
-        formData: {}
-      })
-      await client.send("/install/page_siteinit.php", {
-        method: "POST",
-        formData: {
-          adminname: inputDto.adminName,
-          adminlogin_name: inputDto.adminLogin,
-          adminmail: inputDto.adminEmail,
-          adminpass: inputDto.adminPass,
-          adminpass2: inputDto.adminPass
-        }
-      })
-      await client.send("/install/page_tablesfill.php", {
-        method: "POST",
-        formData: {}
-      })
-      await client.send("/install/page_modulesinstall.php", {
-        method: "POST",
-        formData: {
-          mod: "0"
-        }
-      })
-      await client.send("/install/page_end.php")
-    } finally {
-      phpServer.kill("SIGTERM")
+  createPathSettingsFormData(paths, inputDto) {
+    return {
+      URL: inputDto.url,
+      ROOT_PATH: normalizePath(paths.htdocsPath),
+      TRUST_PATH: normalizePath(paths.trustPath)
     }
+  }
 
-    return new ResultsDto({
-      appKey: inputDto.appKey,
-      usesComposer: false,
-      usesPhoenix: false
-    })
+  createDbConnectionFormData(inputDto) {
+    return {
+      DB_TYPE: inputDto.databaseType,
+      DB_HOST: inputDto.databaseHost,
+      DB_USER: inputDto.databaseUser,
+      DB_PASS: inputDto.databasePassword,
+      DB_PCONNECT: "0"
+    }
+  }
+
+  createDbSettingsFormData(inputDto) {
+    return {
+      DB_NAME: inputDto.databaseName,
+      DB_CHARSET: inputDto.databaseCharset,
+      DB_COLLATION: inputDto.databaseCollation,
+      DB_PREFIX: inputDto.databasePrefix,
+      DB_SALT: randomBytes(16).toString("hex")
+    }
+  }
+
+  createSiteInitFormData(inputDto) {
+    return {
+      adminname: inputDto.adminName,
+      adminlogin_name: inputDto.adminLogin,
+      adminmail: inputDto.adminEmail,
+      adminpass: inputDto.adminPass,
+      adminpass2: inputDto.adminPass
+    }
   }
 }
