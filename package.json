@@ -8,7 +8,11 @@
     "test": "node --test",
     "format": "node scripts/pack.js --format",
     "format-check": "node scripts/pack.js --format-check",
-    "lint": "node --check src/index.js",
+    "lint": "eslint --no-warn-ignored \"src/**/*.js\" \"scripts/**/*.js\"",
     "pack": "node scripts/pack.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0"
   }
 }
