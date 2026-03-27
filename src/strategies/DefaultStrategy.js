@@ -105,7 +105,7 @@ const createInstallerClient = baseUrl => {
   return {send}
 }
 
-export default class LegacyStrategy extends AbstractStrategy {
+export default class DefaultStrategy extends AbstractStrategy {
   async isSupported() {
     const {projectPath} = this.context
     const hasLegacyInstaller = existsSync(path.join(projectPath, "htdocs", "install", "page_langselect.php"))

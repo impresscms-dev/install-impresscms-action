@@ -5,7 +5,7 @@ import {spawn} from "node:child_process"
 import * as core from "@actions/core"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
-import LegacyStrategy from "./strategies/LegacyStrategy.js"
+import DefaultStrategy from "./strategies/DefaultStrategy.js"
 import CommandFailedError from "./Errors/CommandFailedError.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
@@ -58,7 +58,7 @@ const run = async () => {
 
   const strategies = [
     new TngStrategy(context),
-    new LegacyStrategy(context)
+    new DefaultStrategy(context)
   ]
 
   for (const strategy of strategies) {
