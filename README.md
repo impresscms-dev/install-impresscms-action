@@ -51,7 +51,7 @@ jobs:
           tools: composer:v2
 
       - name: Installing ImpressCMS...
-        uses: impresscms-dev/install-impresscms-action@v0.1.1
+        uses: impresscms-dev/install-impresscms-action@v0.2
         with:
           database_name: icms
           database_user: root
