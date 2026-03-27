@@ -90,6 +90,7 @@ This action outputs following data, that can be used in other actions:
 | Name | Type                                                                      | Description                                                                                           |
 |------|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | app_key | string                                                                    | Generated application key                                                                             |
+| detected_impresscms_version | string                                                                    | Detected ImpressCMS version in `X.Y` format, useful for debugging strategy/version decisions         |
 | uses_composer | boolean                                                                   | Returns if current ImpressCMS version uses [Composer](https://getcomposer.org) for package management |
 | uses_phoenix | boolean | Returns if current ImpressCMS version uses [Phoenix](https://github.com/lulco/phoenix) for migrations                                 | 
 
