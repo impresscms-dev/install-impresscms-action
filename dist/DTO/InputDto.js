@@ -1,4 +1,6 @@
 export default class InputDto {
+  #data
+
   /**
    * @param {object} [params]
    * @param {string} [params.url]
@@ -38,23 +40,25 @@ export default class InputDto {
     appKey = "",
     path = "."
   } = {}) {
-    this.url = url
-    this.databaseType = databaseType
-    this.databaseHost = databaseHost
-    this.databaseUser = databaseUser
-    this.databasePassword = databasePassword
-    this.databaseName = databaseName
-    this.databaseCharset = databaseCharset
-    this.databaseCollation = databaseCollation
-    this.databasePrefix = databasePrefix
-    this.databasePort = databasePort
-    this.adminName = adminName
-    this.adminLogin = adminLogin
-    this.adminPass = adminPass
-    this.adminEmail = adminEmail
-    this.language = language
-    this.appKey = appKey
-    this.path = path
+    this.#data = {
+      url,
+      databaseType,
+      databaseHost,
+      databaseUser,
+      databasePassword,
+      databaseName,
+      databaseCharset,
+      databaseCollation,
+      databasePrefix,
+      databasePort,
+      adminName,
+      adminLogin,
+      adminPass,
+      adminEmail,
+      language,
+      appKey,
+      path
+    }
   }
 
   /**
@@ -83,5 +87,124 @@ export default class InputDto {
       appKey: getInput("app_key", ""),
       path: getInput("path", ".")
     })
+  }
+
+  /**
+   * @returns {string}
+   */
+  getUrl() {
+    return this.#data.url
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabaseType() {
+    return this.#data.databaseType
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabaseHost() {
+    return this.#data.databaseHost
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabaseUser() {
+    return this.#data.databaseUser
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabasePassword() {
+    return this.#data.databasePassword
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabaseName() {
+    return this.#data.databaseName
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabaseCharset() {
+    return this.#data.databaseCharset
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabaseCollation() {
+    return this.#data.databaseCollation
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabasePrefix() {
+    return this.#data.databasePrefix
+  }
+
+  /**
+   * @returns {string}
+   */
+  getDatabasePort() {
+    return this.#data.databasePort
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAdminName() {
+    return this.#data.adminName
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAdminLogin() {
+    return this.#data.adminLogin
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAdminPass() {
+    return this.#data.adminPass
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAdminEmail() {
+    return this.#data.adminEmail
+  }
+
+  /**
+   * @returns {string}
+   */
+  getLanguage() {
+    return this.#data.language
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAppKey() {
+    return this.#data.appKey
+  }
+
+  /**
+   * @returns {string}
+   */
+  getPath() {
+    return this.#data.path
   }
 }

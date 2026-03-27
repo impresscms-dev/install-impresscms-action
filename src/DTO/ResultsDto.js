@@ -1,4 +1,6 @@
 export default class ResultsDto {
+  #data
+
   /**
    * @param {object} [params]
    * @param {string} [params.appKey]
@@ -10,9 +12,32 @@ export default class ResultsDto {
     usesComposer = false,
     usesPhoenix = false
   } = {}) {
-    this.appKey = appKey
-    this.usesComposer = usesComposer
-    this.usesPhoenix = usesPhoenix
+    this.#data = {
+      appKey,
+      usesComposer,
+      usesPhoenix
+    }
+  }
+
+  /**
+   * @returns {string}
+   */
+  getAppKey() {
+    return this.#data.appKey
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  getUsesComposer() {
+    return this.#data.usesComposer
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  getUsesPhoenix() {
+    return this.#data.usesPhoenix
   }
 
   /**
@@ -21,8 +46,8 @@ export default class ResultsDto {
    * @param {(name: string, value: string | boolean) => void} setOutput
    */
   applyOutputs(setOutput) {
-    setOutput("app_key", this.appKey)
-    setOutput("uses_composer", this.usesComposer)
-    setOutput("uses_phoenix", this.usesPhoenix)
+    setOutput("app_key", this.getAppKey())
+    setOutput("uses_composer", this.getUsesComposer())
+    setOutput("uses_phoenix", this.getUsesPhoenix())
   }
 }

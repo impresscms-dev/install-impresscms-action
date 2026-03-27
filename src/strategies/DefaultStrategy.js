@@ -50,7 +50,7 @@ export default class DefaultStrategy extends AbstractStrategy {
     }
 
     return new ResultsDto({
-      appKey: inputDto.appKey,
+      appKey: inputDto.getAppKey(),
       usesComposer: false,
       usesPhoenix: false
     })
@@ -156,7 +156,7 @@ export default class DefaultStrategy extends AbstractStrategy {
     const client = await this.#createInstallerClient(baseUrl)
 
     try {
-      await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.language}})
+      await client.send("/install/page_langselect.php", {method: "POST", formData: {lang: inputDto.getLanguage()}})
       await client.send("/install/page_start.php")
       await client.send("/install/page_modcheck.php")
       await client.send("/install/page_pathsettings.php", {method: "POST", formData: this.createPathSettingsFormData(paths, inputDto)})
@@ -180,7 +180,7 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   createPathSettingsFormData(paths, inputDto) {
     return {
-      URL: inputDto.url,
+      URL: inputDto.getUrl(),
       ROOT_PATH: normalizePath(paths.containerRootPath),
       TRUST_PATH: normalizePath(paths.containerTrustPath)
     }
@@ -192,10 +192,10 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   createDbConnectionFormData(inputDto) {
     return {
-      DB_TYPE: inputDto.databaseType,
-      DB_HOST: inputDto.databaseHost,
-      DB_USER: inputDto.databaseUser,
-      DB_PASS: inputDto.databasePassword,
+      DB_TYPE: inputDto.getDatabaseType(),
+      DB_HOST: inputDto.getDatabaseHost(),
+      DB_USER: inputDto.getDatabaseUser(),
+      DB_PASS: inputDto.getDatabasePassword(),
       DB_PCONNECT: "0"
     }
   }
@@ -206,10 +206,10 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   createDbSettingsFormData(inputDto) {
     return {
-      DB_NAME: inputDto.databaseName,
-      DB_CHARSET: inputDto.databaseCharset,
-      DB_COLLATION: inputDto.databaseCollation,
-      DB_PREFIX: inputDto.databasePrefix,
+      DB_NAME: inputDto.getDatabaseName(),
+      DB_CHARSET: inputDto.getDatabaseCharset(),
+      DB_COLLATION: inputDto.getDatabaseCollation(),
+      DB_PREFIX: inputDto.getDatabasePrefix(),
       DB_SALT: randomBytes(16).toString("hex")
     }
   }
@@ -220,11 +220,11 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   createSiteInitFormData(inputDto) {
     return {
-      adminname: inputDto.adminName,
-      adminlogin_name: inputDto.adminLogin,
-      adminmail: inputDto.adminEmail,
-      adminpass: inputDto.adminPass,
-      adminpass2: inputDto.adminPass
+      adminname: inputDto.getAdminName(),
+      adminlogin_name: inputDto.getAdminLogin(),
+      adminmail: inputDto.getAdminEmail(),
+      adminpass: inputDto.getAdminPass(),
+      adminpass2: inputDto.getAdminPass()
     }
   }
 
