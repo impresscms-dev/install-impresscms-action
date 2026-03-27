@@ -20,7 +20,14 @@ export default [
       }
     },
     rules: {
-      "no-empty": ["error", {"allowEmptyCatch": true}]
+      "no-empty": ["error", {"allowEmptyCatch": true}],
+      "no-restricted-syntax": [
+        "error",
+        {
+          "selector": "NewExpression[callee.name='Error']",
+          "message": "Use a typed class from src/Errors instead of Error directly."
+        }
+      ]
     }
   }
 ]

@@ -1,3 +1,5 @@
+import AbstractMethodNotImplementedError from "../Errors/AbstractMethodNotImplementedError.js"
+
 export default class AbstractStrategy {
   constructor(context) {
     this.context = context
@@ -5,10 +7,10 @@ export default class AbstractStrategy {
   }
 
   async isSupported() {
-    throw new Error(`${this.name}.isSupported() must be implemented`)
+    throw new AbstractMethodNotImplementedError(this.name, "isSupported")
   }
 
   async apply() {
-    throw new Error(`${this.name}.apply() must be implemented`)
+    throw new AbstractMethodNotImplementedError(this.name, "apply")
   }
 }

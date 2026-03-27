@@ -6,6 +6,10 @@ import * as core from "@actions/core"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
 import LegacyStrategy from "./strategies/LegacyStrategy.js"
+import CommandFailedError from "./Errors/CommandFailedError.js"
+import PathNotFoundError from "./Errors/PathNotFoundError.js"
+import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
+import NoSupportedStrategyError from "./Errors/NoSupportedStrategyError.js"
 
 const getInput = (name, fallback = "") => process.env[`INPUT_${name.toUpperCase()}`] ?? fallback
 
@@ -33,7 +37,7 @@ const runCommand = async (command, args, options = {}) => await new Promise((res
   child.on("error", reject)
   child.on("close", code => {
     if (code !== 0) {
-      reject(new Error(`Command failed: ${command} ${args.join(" ")}\n${stderr}`))
+      reject(new CommandFailedError(command, args, stderr))
       return
     }
     resolve({stdout, stderr})
@@ -43,7 +47,7 @@ const runCommand = async (command, args, options = {}) => await new Promise((res
 const run = async () => {
   const projectPath = path.resolve(getInput("path", "."))
   if (!existsSync(projectPath)) {
-    throw new Error(`Path does not exist: ${projectPath}`)
+    throw new PathNotFoundError(projectPath)
   }
 
   const context = {
@@ -65,14 +69,14 @@ const run = async () => {
 
     const result = await strategy.apply()
     if (!(result instanceof ResultsDto)) {
-      throw new Error(`Strategy ${strategy.name} must return ResultsDto`)
+      throw new StrategyResultTypeError(strategy.name)
     }
 
     result.applyOutputs(core.setOutput)
     return
   }
 
-  throw new Error("No supported strategy was found for this ImpressCMS checkout")
+  throw new NoSupportedStrategyError()
 }
 
 run().catch(error => {

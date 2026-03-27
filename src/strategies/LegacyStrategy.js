@@ -6,6 +6,9 @@ import {randomBytes} from "node:crypto"
 import {spawn} from "node:child_process"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
+import PhpServerNotReadyError from "../Errors/PhpServerNotReadyError.js"
+import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
+import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
 
 const normalizePath = value => value.replaceAll("\\", "/")
 
@@ -31,7 +34,7 @@ const waitForServer = async (url, retries = 50, waitMs = 150) => {
     }
     await new Promise(resolve => setTimeout(resolve, waitMs))
   }
-  throw new Error("PHP built-in server did not become ready in time")
+  throw new PhpServerNotReadyError()
 }
 
 const parseSetCookies = response => {
@@ -82,7 +85,7 @@ const createInstallerClient = baseUrl => {
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location")
       if (!location) {
-        throw new Error(`Redirect without location from ${pathname}`)
+        throw new RedirectLocationMissingError(pathname)
       }
       if (!followRedirect) {
         return response
@@ -93,7 +96,7 @@ const createInstallerClient = baseUrl => {
 
     if (response.status >= 400) {
       const bodyText = await response.text()
-      throw new Error(`Installer request failed (${pathname}): HTTP ${response.status}\n${bodyText}`)
+      throw new InstallerRequestFailedError(pathname, response.status, bodyText)
     }
 
     return response
