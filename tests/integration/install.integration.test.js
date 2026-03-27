@@ -31,6 +31,7 @@ const LEGACY_TAG_BY_VERSION = {
   "2.0": "v2.0.2"
 }
 const INTEGRATION_VARIANT = process.env.INTEGRATION_VARIANT || "all"
+const INTEGRATION_IMPRESSCMS_REF = process.env.INTEGRATION_IMPRESSCMS_REF || ""
 const HAS_DOCKER = commandExists("docker")
 const integrationDescribe = HAS_DOCKER ? describe : describe.skip
 const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
@@ -155,6 +156,10 @@ integrationDescribe("Installation Integration", () => {
     }
 
     versionTagMap = Object.fromEntries(selectedLegacyVersions.map(version => {
+      if (INTEGRATION_IMPRESSCMS_REF) {
+        return [version, INTEGRATION_IMPRESSCMS_REF]
+      }
+
       return [version, LEGACY_TAG_BY_VERSION[version] || ""]
     }))
   })
@@ -202,9 +207,10 @@ integrationDescribe("Installation Integration", () => {
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
     const mysql = await startMysqlContainer()
     const actionsCore = createActionsCoreStub()
+    const tngRef = INTEGRATION_IMPRESSCMS_REF || "tng"
 
     try {
-      await checkoutImpresscmsReference(checkoutPath, "tng")
+      await checkoutImpresscmsReference(checkoutPath, tngRef)
 
       const strategy = new TngStrategy(
         new FilePermissionService(actionsCore),
