@@ -89,7 +89,6 @@ jobs:
     needs:
       - format-check
       - lint
-      - test
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
