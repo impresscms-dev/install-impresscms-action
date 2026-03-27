@@ -3,7 +3,7 @@ export const services = {
     synthetic: true
   },
   "service.actions_core": {
-    synthetic: true
+    class: "../Services/ActionsCoreService.js"
   },
   "service.file_permission": {
     class: "../Services/FilePermissionService.js"

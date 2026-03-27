@@ -1,7 +1,6 @@
 import {existsSync} from "node:fs"
 import path from "node:path"
 import {fileURLToPath} from "node:url"
-import * as core from "@actions/core"
 import {ContainerBuilder, JsFileLoader} from "node-dependency-injection"
 import InputDto from "./DTO/InputDto.js"
 import ResultsDto from "./DTO/ResultsDto.js"
@@ -16,11 +15,11 @@ const run = async () => {
   const container = new ContainerBuilder()
   const loader = new JsFileLoader(container)
   await loader.load(path.join(currentDirPath, "Config", "Container.js"))
-  container.set("service.actions_core", core)
 
+  /** @type {import("./Services/ActionsCoreService.js").default} */
   const actionsCore = container.get("service.actions_core")
   try {
-    const inputDto = InputDto.fromActionInput(actionsCore.getInput)
+    const inputDto = InputDto.fromActionInput(name => actionsCore.getInput(name))
     const projectPath = path.resolve(inputDto.path)
     if (!existsSync(projectPath)) {
       throw new PathNotFoundError(projectPath)
@@ -39,7 +38,7 @@ const run = async () => {
         throw new StrategyResultTypeError(strategy.name)
       }
 
-      result.applyOutputs(actionsCore.setOutput)
+      result.applyOutputs((name, value) => actionsCore.setOutput(name, value))
       return
     }
 
