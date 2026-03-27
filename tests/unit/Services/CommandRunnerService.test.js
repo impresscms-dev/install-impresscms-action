@@ -54,17 +54,19 @@ const createFakeChildProcess = () => {
   }
 }
 
-const loadService = async ({spawnMock, infoMock, errorMock}) => {
+const loadService = async ({spawnMock, spawnSyncMock = jest.fn(), infoMock, errorMock}) => {
   jest.resetModules()
   jest.unstable_mockModule("node:child_process", () => ({
-    spawn: spawnMock
+    spawn: spawnMock,
+    spawnSync: spawnSyncMock
   }))
 
   const {default: CommandRunnerService} = await import("../../../src/Services/CommandRunnerService.js")
-  return new CommandRunnerService({
+  const service = new CommandRunnerService({
     info: infoMock,
     error: errorMock
   })
+  return {service, spawnSyncMock}
 }
 
 describe("CommandRunnerService", () => {
@@ -73,7 +75,7 @@ describe("CommandRunnerService", () => {
     const spawnMock = jest.fn(() => fakeChild.process)
     const infoMock = jest.fn()
     const errorMock = jest.fn()
-    const service = await loadService({spawnMock, infoMock, errorMock})
+    const {service} = await loadService({spawnMock, infoMock, errorMock})
 
     const promise = service.run("php", ["-v"], {cwd: "/tmp/project"})
     fakeChild.emitStdout("line from stdout\n")
@@ -97,12 +99,29 @@ describe("CommandRunnerService", () => {
     const spawnMock = jest.fn(() => fakeChild.process)
     const infoMock = jest.fn()
     const errorMock = jest.fn()
-    const service = await loadService({spawnMock, infoMock, errorMock})
+    const {service} = await loadService({spawnMock, infoMock, errorMock})
 
     const promise = service.run("composer", ["install"])
     fakeChild.emitStderr("install failed\n")
     fakeChild.emitClose(1)
 
     await expect(promise).rejects.toThrow("Command failed: composer install")
+  })
+
+  test("exists returns true when command is available", async () => {
+    const spawnMock = jest.fn()
+    const spawnSyncMock = jest.fn(() => ({status: 0}))
+    const {service} = await loadService({spawnMock, spawnSyncMock, infoMock: jest.fn(), errorMock: jest.fn()})
+
+    expect(service.exists("node")).toBe(true)
+    expect(spawnSyncMock).toHaveBeenCalledWith("node", ["--version"], {stdio: "ignore"})
+  })
+
+  test("exists returns false when command is unavailable", async () => {
+    const spawnMock = jest.fn()
+    const spawnSyncMock = jest.fn(() => ({status: 1}))
+    const {service} = await loadService({spawnMock, spawnSyncMock, infoMock: jest.fn(), errorMock: jest.fn()})
+
+    expect(service.exists("missing")).toBe(false)
   })
 })

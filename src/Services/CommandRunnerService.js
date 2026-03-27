@@ -1,4 +1,4 @@
-import {spawn} from "node:child_process"
+import {spawn, spawnSync} from "node:child_process"
 import CommandFailedError from "../Errors/CommandFailedError.js"
 
 export default class CommandRunnerService {
@@ -54,5 +54,14 @@ export default class CommandRunnerService {
         resolve({stdout, stderr})
       })
     })
+  }
+
+  /**
+   * @param {string} command
+   * @returns {boolean}
+   */
+  exists(command) {
+    const result = spawnSync(command, ["--version"], {stdio: "ignore"})
+    return result.status === 0
   }
 }

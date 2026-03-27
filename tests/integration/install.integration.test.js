@@ -7,7 +7,6 @@ import RequirementsInfo from "../../src/Config/RequirementsInfo.js"
 import ImpressCMSRepository from "../../src/Config/ImpressCMSRepository.js"
 import InputDto from "../../src/DTO/InputDto.js"
 import CommandRunnerService from "../../src/Services/CommandRunnerService.js"
-import CommandExistenceService from "../../src/Services/CommandExistenceService.js"
 import GitService from "../../src/Services/GitService.js"
 import FilePermissionService from "../../src/Services/FilePermissionService.js"
 import ImpressVersionService from "../../src/Services/ImpressVersionService.js"
@@ -25,8 +24,8 @@ const MYSQL_PASSWORD = MYSQL_ROOT_PASSWORD
 const REQUIREMENTS_VERSIONS = Object.keys(RequirementsInfo).sort()
 const INTEGRATION_VARIANT = process.env.INTEGRATION_VARIANT || "all"
 const INTEGRATION_IMPRESSCMS_REF = process.env.INTEGRATION_IMPRESSCMS_REF || ""
-const commandExistenceService = new CommandExistenceService()
-const HAS_DOCKER = commandExistenceService.exists("docker")
+const bootstrapCommandRunnerService = new CommandRunnerService(createActionsCoreStub())
+const HAS_DOCKER = bootstrapCommandRunnerService.exists("docker")
 const integrationDescribe = HAS_DOCKER ? describe : describe.skip
 const selectedLegacyVersions = INTEGRATION_VARIANT === "all"
   ? REQUIREMENTS_VERSIONS
@@ -145,7 +144,7 @@ integrationDescribe("Installation Integration", () => {
     })
   }
 
-  const tngTest = runTngVariant && commandExistenceService.exists("php") && commandExistenceService.exists("composer") ? test : test.skip
+  const tngTest = runTngVariant && bootstrapCommandRunnerService.exists("php") && bootstrapCommandRunnerService.exists("composer") ? test : test.skip
   tngTest("installs tng branch", async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "icms-install-integration-"))
     const checkoutPath = path.join(tempRoot, "impresscms-tng")
