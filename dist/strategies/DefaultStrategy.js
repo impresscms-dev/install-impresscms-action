@@ -4,6 +4,8 @@ import path from "node:path"
 import process from "node:process"
 import {randomBytes} from "node:crypto"
 import {spawn} from "node:child_process"
+import {CookieJar} from "tough-cookie"
+import makeFetchCookie from "fetch-cookie"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
 import PhpServerNotReadyError from "../Errors/PhpServerNotReadyError.js"
@@ -37,36 +39,12 @@ const waitForServer = async (url, retries = 50, waitMs = 150) => {
   throw new PhpServerNotReadyError()
 }
 
-const parseSetCookies = response => {
-  if (typeof response.headers.getSetCookie === "function") {
-    return response.headers.getSetCookie()
-  }
-  const single = response.headers.get("set-cookie")
-  return single ? [single] : []
-}
-
 const createInstallerClient = baseUrl => {
-  const cookies = new Map()
-
-  const updateCookies = response => {
-    for (const cookieEntry of parseSetCookies(response)) {
-      const [pair] = cookieEntry.split(";")
-      const [name, ...parts] = pair.split("=")
-      if (!name) {
-        continue
-      }
-      cookies.set(name.trim(), parts.join("=").trim())
-    }
-  }
-
-  const cookieHeader = () => Array.from(cookies.entries()).map(([name, value]) => `${name}=${value}`).join("; ")
+  const cookieJar = new CookieJar()
+  const fetchWithCookies = makeFetchCookie(fetch, cookieJar)
 
   const send = async (pathname, {method = "GET", formData = null, followRedirect = true} = {}) => {
     const headers = {}
-    const cookieValue = cookieHeader()
-    if (cookieValue) {
-      headers.Cookie = cookieValue
-    }
 
     let body = undefined
     if (formData) {
@@ -74,13 +52,12 @@ const createInstallerClient = baseUrl => {
       body = new URLSearchParams(formData).toString()
     }
 
-    const response = await fetch(`${baseUrl}${pathname}`, {
+    const response = await fetchWithCookies(`${baseUrl}${pathname}`, {
       method,
       headers,
       body,
       redirect: "manual"
     })
-    updateCookies(response)
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location")
