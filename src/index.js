@@ -1,21 +1,13 @@
-import {appendFileSync, existsSync} from "node:fs"
+import {existsSync} from "node:fs"
 import path from "node:path"
 import process from "node:process"
 import {spawn} from "node:child_process"
+import * as core from "@actions/core"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
 import LegacyStrategy from "./strategies/LegacyStrategy.js"
 
 const getInput = (name, fallback = "") => process.env[`INPUT_${name.toUpperCase()}`] ?? fallback
-
-const setOutput = (name, value) => {
-  const outputPath = process.env.GITHUB_OUTPUT
-  if (!outputPath) {
-    return
-  }
-
-  appendFileSync(outputPath, `${name}=${String(value)}\n`, {encoding: "utf8"})
-}
 
 const runCommand = async (command, args, options = {}) => await new Promise((resolve, reject) => {
   const child = spawn(command, args, {
@@ -76,7 +68,7 @@ const run = async () => {
       throw new Error(`Strategy ${strategy.name} must return ResultsDto`)
     }
 
-    result.applyOutputs(setOutput)
+    result.applyOutputs(core.setOutput)
     return
   }
 
