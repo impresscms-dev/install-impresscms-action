@@ -21,7 +21,7 @@ describe("ImpressVersionService", () => {
     const {ImpressVersionService, warning} = await loadService({existsSync, readFileSync})
     const impressVersionService = new ImpressVersionService({warning})
 
-    expect(impressVersionService.detect("/repo")).toBe("1.5")
+    expect(impressVersionService.detect("/repo")).toBe("1.5.11")
   })
 
   test("detects version from composer.json version field", async () => {
@@ -30,7 +30,7 @@ describe("ImpressVersionService", () => {
     const {ImpressVersionService, warning} = await loadService({existsSync, readFileSync})
     const impressVersionService = new ImpressVersionService({warning})
 
-    expect(impressVersionService.detect("/repo")).toBe("2.0")
+    expect(impressVersionService.detect("/repo")).toBe("2.0.3")
   })
 
   test("detects version from composer branch-alias", async () => {
@@ -45,7 +45,7 @@ describe("ImpressVersionService", () => {
     const {ImpressVersionService, warning} = await loadService({existsSync, readFileSync})
     const impressVersionService = new ImpressVersionService({warning})
 
-    expect(impressVersionService.detect("/repo")).toBe("2.0")
+    expect(impressVersionService.detect("/repo")).toBe("2.0.0")
   })
 
   test("detects version from composer.lock package info", async () => {
@@ -56,7 +56,18 @@ describe("ImpressVersionService", () => {
     const {ImpressVersionService, warning} = await loadService({existsSync, readFileSync})
     const impressVersionService = new ImpressVersionService({warning})
 
-    expect(impressVersionService.detect("/repo")).toBe("2.0")
+    expect(impressVersionService.detect("/repo")).toBe("2.0.0")
+  })
+
+  test("detectMajorMinor returns internal X.Y format from semver", async () => {
+    const existsSync = jest.fn(filePath => String(filePath).includes("composer.lock"))
+    const readFileSync = jest.fn(() => JSON.stringify({
+      packages: [{name: "impresscms/impresscms", version: "2.0.5"}]
+    }))
+    const {ImpressVersionService, warning} = await loadService({existsSync, readFileSync})
+    const impressVersionService = new ImpressVersionService({warning})
+
+    expect(impressVersionService.detectMajorMinor("/repo")).toBe("2.0")
   })
 
   test("throws typed error when version is not detected", async () => {

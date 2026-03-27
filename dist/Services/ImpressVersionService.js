@@ -30,6 +30,28 @@ export default class ImpressVersionService {
 
   /**
    * @param {string} projectPath
+   * @returns {string}
+   */
+  detectMajorMinor(projectPath) {
+    return this.toMajorMinor(this.detect(projectPath))
+  }
+
+  /**
+   * @param {string} version
+   * @returns {string}
+   */
+  toMajorMinor(version) {
+    const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/)
+    if (!match) {
+      throw new ImpressVersionNotDetectedError()
+    }
+
+    const [, major, minor] = match
+    return `${major}.${minor}`
+  }
+
+  /**
+   * @param {string} projectPath
    * @returns {string | null}
    */
   #detectFromLegacyVersionFiles(projectPath) {
@@ -50,9 +72,9 @@ export default class ImpressVersionService {
       }
 
       const [, version] = fullVersionMatch
-      const majorMinor = this.#extractMajorMinor(version)
-      if (majorMinor) {
-        return majorMinor
+      const semver = this.#extractSemver(version)
+      if (semver) {
+        return semver
       }
     }
 
@@ -96,7 +118,7 @@ export default class ImpressVersionService {
       ...Object.values(composerJson?.extra?.["branch-alias"] ?? {})
     ]
 
-    return this.#detectFromCandidates(candidates)
+    return this.#detectSemverFromCandidates(candidates)
   }
 
   /**
@@ -119,16 +141,16 @@ export default class ImpressVersionService {
       impressPackage?.version
     ]
 
-    return this.#detectFromCandidates(candidates)
+    return this.#detectSemverFromCandidates(candidates)
   }
 
   /**
    * @param {unknown[]} candidates
    * @returns {string | null}
    */
-  #detectFromCandidates(candidates) {
+  #detectSemverFromCandidates(candidates) {
     for (const candidate of candidates) {
-      const version = this.#extractMajorMinor(candidate)
+      const version = this.#extractSemver(candidate)
       if (version) {
         return version
       }
@@ -159,17 +181,17 @@ export default class ImpressVersionService {
    * @param {unknown} value
    * @returns {string | null}
    */
-  #extractMajorMinor(value) {
+  #extractSemver(value) {
     if (typeof value !== "string") {
       return null
     }
 
-    const match = value.match(/(\d+)\.(\d+)/)
+    const match = value.match(/(\d+)\.(\d+)(?:\.(\d+))?/)
     if (!match) {
       return null
     }
 
-    const [, major, minor] = match
-    return `${major}.${minor}`
+    const [, major, minor, patch = "0"] = match
+    return `${major}.${minor}.${patch}`
   }
 }

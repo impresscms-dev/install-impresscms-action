@@ -31,7 +31,7 @@ describe("TngStrategy", () => {
     const {TngStrategy} = await loadStrategy()
     const filePermissionService = {chmodRecursive: jest.fn()}
     const commandRunnerService = {run: jest.fn().mockResolvedValue({stdout: "", stderr: ""})}
-    const impressVersionService = {detect: jest.fn().mockReturnValue("2.0")}
+    const impressVersionService = {detect: jest.fn().mockReturnValue("2.0.0")}
     const strategy = new TngStrategy(filePermissionService, commandRunnerService, impressVersionService)
 
     const inputDto = {
@@ -56,7 +56,7 @@ describe("TngStrategy", () => {
     const result = await strategy.apply(inputDto, "/repo")
 
     expect(result.appKey).toBe("fixed-key")
-    expect(result.detectedImpresscmsVersion).toBe("2.0")
+    expect(result.detectedImpresscmsVersion).toBe("2.0.0")
     expect(result.usesComposer).toBe(true)
     expect(result.usesPhoenix).toBe(true)
     expect(commandRunnerService.run).toHaveBeenNthCalledWith(1, "composer", ["install", "--no-progress", "--prefer-dist", "--optimize-autoloader"], expect.any(Object))

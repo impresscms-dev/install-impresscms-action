@@ -51,10 +51,11 @@ export default class DefaultStrategy extends AbstractStrategy {
    */
   async apply(inputDto, projectPath) {
     const detectedImpresscmsVersion = this.impressVersionService.detect(projectPath)
+    const requirementsVersion = this.impressVersionService.toMajorMinor(detectedImpresscmsVersion)
     const paths = this.resolveLegacyPaths(projectPath)
     this.ensureTrustPath(paths.trustPath)
     await this.applyLegacyPermissions(paths)
-    const apacheServer = await this.startApacheContainer(paths, detectedImpresscmsVersion)
+    const apacheServer = await this.startApacheContainer(paths, requirementsVersion)
 
     try {
       await this.runInstaller(apacheServer.baseUrl, paths, inputDto)

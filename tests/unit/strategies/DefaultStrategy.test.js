@@ -39,7 +39,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn().mockReturnValue("2.0")},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn()},
       {uploadFailureArtifacts: jest.fn()}
@@ -58,7 +58,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn().mockReturnValue("2.0")},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn()},
       {uploadFailureArtifacts: jest.fn()}
@@ -74,7 +74,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn().mockReturnValue("2.0")},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
       apacheContainerFactory,
       {build: jest.fn()},
       {uploadFailureArtifacts: jest.fn()}
@@ -111,7 +111,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       networkService,
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn().mockReturnValue("2.0")},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn().mockReturnValue(client)},
       {uploadFailureArtifacts: jest.fn()}
@@ -141,7 +141,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       networkService,
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn().mockReturnValue("2.0")},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn().mockReturnValue(client)},
       playwrightArtifactsService
@@ -161,7 +161,7 @@ describe("DefaultStrategy", () => {
     const strategy = new DefaultStrategy(
       {waitForServer: jest.fn()},
       {chmodRecursive: jest.fn()},
-      {detect: jest.fn().mockReturnValue("2.0")},
+      {detect: jest.fn().mockReturnValue("2.0.0"), toMajorMinor: jest.fn().mockReturnValue("2.0")},
       {build: jest.fn()},
       {build: jest.fn()},
       {uploadFailureArtifacts: jest.fn()}
@@ -182,7 +182,7 @@ describe("DefaultStrategy", () => {
     const result = await strategy.apply(createInputDto(), "/repo")
 
     expect(result.appKey).toBe("fixed-key")
-    expect(result.detectedImpresscmsVersion).toBe("2.0")
+    expect(result.detectedImpresscmsVersion).toBe("2.0.0")
     expect(result.usesComposer).toBe(false)
     expect(result.usesPhoenix).toBe(false)
     expect(apacheServer.stop).toHaveBeenCalledTimes(1)
