@@ -7,8 +7,6 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 240
-    env:
-      RUN_INSTALLATION_INTEGRATION_TESTS: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

@@ -105,7 +105,7 @@ They install ImpressCMS for each legacy version line from `src/Config/Requiremen
 Run manually:
 
 ```bash
-RUN_INSTALLATION_INTEGRATION_TESTS=1 npm run test:integration
+npm run test:integration
 ```
 
 There is also manual GitHub workflow: `.github/workflows/integration.yml`.

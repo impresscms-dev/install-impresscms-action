@@ -30,10 +30,8 @@ const LEGACY_TAG_BY_VERSION = {
   "1.5": "v1.5.0-rc",
   "2.0": "v2.0.2"
 }
-const RUN_INTEGRATION_TESTS = process.env.RUN_INSTALLATION_INTEGRATION_TESTS === "1"
 const HAS_DOCKER = commandExists("docker")
-const CAN_RUN = RUN_INTEGRATION_TESTS && HAS_DOCKER
-const integrationDescribe = CAN_RUN ? describe : describe.skip
+const integrationDescribe = HAS_DOCKER ? describe : describe.skip
 
 /**
  * @param {string} command
