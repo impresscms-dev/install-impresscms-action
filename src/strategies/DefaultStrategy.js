@@ -7,10 +7,6 @@ import ResultsDto from "../DTO/ResultsDto.js"
 import RedirectLocationMissingError from "../Errors/RedirectLocationMissingError.js"
 import InstallerRequestFailedError from "../Errors/InstallerRequestFailedError.js"
 import ImpressVersionRequirementsMissingError from "../Errors/ImpressVersionRequirementsMissingError.js"
-import NetworkService from "../Services/NetworkService.js"
-import FilePermissionService from "../Services/FilePermissionService.js"
-import ImpressVersionService from "../Services/ImpressVersionService.js"
-import ApacheContainerInstance from "../Infrastructure/ApacheContainerInstance.js"
 import RequirementsInfo from "../Config/RequirementsInfo.js"
 
 /**
@@ -20,6 +16,21 @@ import RequirementsInfo from "../Config/RequirementsInfo.js"
 const normalizePath = value => value.replaceAll("\\", "/")
 
 export default class DefaultStrategy extends AbstractStrategy {
+  /**
+   * @param {object} context
+   * @param {import("../Services/NetworkService.js").default} networkService
+   * @param {import("../Services/FilePermissionService.js").default} filePermissionService
+   * @param {import("../Services/ImpressVersionService.js").default} impressVersionService
+   * @param {import("../Builders/ApacheContainerBuilder.js").default} apacheContainerBuilder
+   */
+  constructor(context, networkService, filePermissionService, impressVersionService, apacheContainerBuilder) {
+    super(context)
+    this.networkService = networkService
+    this.filePermissionService = filePermissionService
+    this.impressVersionService = impressVersionService
+    this.apacheContainerBuilder = apacheContainerBuilder
+  }
+
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
    * @returns {Promise<boolean>}
@@ -92,22 +103,22 @@ export default class DefaultStrategy extends AbstractStrategy {
     ]
 
     for (const candidate of chmodCandidates) {
-      FilePermissionService.chmodRecursive(candidate)
+      this.filePermissionService.chmodRecursive(candidate)
     }
   }
 
   /**
    * @param {{projectPath: string, htdocsPath: string, trustPath: string, containerRootPath: string, containerTrustPath: string}} paths
-   * @returns {Promise<ApacheContainerInstance>}
+   * @returns {Promise<import("../Infrastructure/ApacheContainerInstance.js").default>}
    */
   async startApacheContainer(paths) {
-    const impressVersion = ImpressVersionService.detect(paths.projectPath)
+    const impressVersion = this.impressVersionService.detect(paths.projectPath)
     const phpRequirements = RequirementsInfo[impressVersion]
     if (!phpRequirements) {
       throw new ImpressVersionRequirementsMissingError(impressVersion)
     }
 
-    return await ApacheContainerInstance.start({
+    return await this.apacheContainerBuilder.build({
       phpVersion: phpRequirements.max,
       htdocsPath: paths.htdocsPath,
       trustPath: paths.trustPath,
@@ -123,7 +134,7 @@ export default class DefaultStrategy extends AbstractStrategy {
    * @returns {Promise<void>}
    */
   async runInstaller(baseUrl, paths, inputDto) {
-    await NetworkService.waitForServer(`${baseUrl}/install/index.php`)
+    await this.networkService.waitForServer(`${baseUrl}/install/index.php`)
     const client = await this.#createInstallerClient(baseUrl)
 
     try {

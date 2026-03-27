@@ -4,6 +4,12 @@ import NetworkService from "../../src/Services/NetworkService.js"
 import PhpServerNotReadyError from "../../src/Errors/PhpServerNotReadyError.js"
 
 describe("NetworkService", () => {
+  let networkService
+
+  beforeEach(() => {
+    networkService = new NetworkService()
+  })
+
   afterEach(() => {
     jest.restoreAllMocks()
   })
@@ -17,7 +23,7 @@ describe("NetworkService", () => {
     }
     jest.spyOn(net, "createServer").mockReturnValue(fakeServer)
 
-    await expect(NetworkService.getFreePort()).resolves.toBe(43123)
+    await expect(networkService.getFreePort()).resolves.toBe(43123)
     expect(fakeServer.listen).toHaveBeenCalledWith(0, "127.0.0.1", expect.any(Function))
     expect(fakeServer.close).toHaveBeenCalled()
   })
@@ -26,7 +32,7 @@ describe("NetworkService", () => {
     const fetchMock = jest.fn().mockResolvedValue({status: 200})
     global.fetch = fetchMock
 
-    await expect(NetworkService.waitForServer("http://mocked.local")).resolves.toBeUndefined()
+    await expect(networkService.waitForServer("http://mocked.local")).resolves.toBeUndefined()
     expect(fetchMock).toHaveBeenCalledWith("http://mocked.local", {redirect: "manual"})
   })
 
@@ -38,7 +44,7 @@ describe("NetworkService", () => {
       return 0
     })
 
-    await expect(NetworkService.waitForServer("http://mocked.local", 3, 1)).rejects.toBeInstanceOf(PhpServerNotReadyError)
+    await expect(networkService.waitForServer("http://mocked.local", 3, 1)).rejects.toBeInstanceOf(PhpServerNotReadyError)
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 })

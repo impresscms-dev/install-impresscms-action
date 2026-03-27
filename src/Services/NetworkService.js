@@ -5,7 +5,7 @@ export default class NetworkService {
   /**
    * @returns {Promise<number>}
    */
-  static async getFreePort() {
+  async getFreePort() {
     return await new Promise((resolve, reject) => {
       const server = net.createServer()
       server.listen(0, "127.0.0.1", () => {
@@ -25,7 +25,7 @@ export default class NetworkService {
    * @param {number} waitMs
    * @returns {Promise<void>}
    */
-  static async waitForServer(url, retries = 50, waitMs = 150) {
+  async waitForServer(url, retries = 50, waitMs = 150) {
     for (let i = 0; i < retries; i += 1) {
       try {
         const response = await fetch(url, {redirect: "manual"})

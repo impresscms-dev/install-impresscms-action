@@ -3,11 +3,15 @@ import path from "node:path"
 import process from "node:process"
 import {spawn} from "node:child_process"
 import * as core from "@actions/core"
-import {ContainerBuilder} from "node-dependency-injection"
+import {ContainerBuilder, Reference} from "node-dependency-injection"
 import InputDto from "./DTO/InputDto.js"
 import ResultsDto from "./DTO/ResultsDto.js"
 import TngStrategy from "./strategies/TngStrategy.js"
 import DefaultStrategy from "./strategies/DefaultStrategy.js"
+import FilePermissionService from "./Services/FilePermissionService.js"
+import NetworkService from "./Services/NetworkService.js"
+import ImpressVersionService from "./Services/ImpressVersionService.js"
+import ApacheContainerBuilder from "./Builders/ApacheContainerBuilder.js"
 import CommandFailedError from "./Errors/CommandFailedError.js"
 import PathNotFoundError from "./Errors/PathNotFoundError.js"
 import StrategyResultTypeError from "./Errors/StrategyResultTypeError.js"
@@ -74,8 +78,23 @@ const run = async () => {
   }
 
   const container = new ContainerBuilder()
-  container.register("strategy.tng", TngStrategy, [context]).addTag("strategy")
-  container.register("strategy.default", DefaultStrategy, [context]).addTag("strategy")
+  container.register("service.file_permission", FilePermissionService)
+  container.register("service.network", NetworkService)
+  container.register("service.impress_version", ImpressVersionService)
+  container.register("builder.apache_container", ApacheContainerBuilder)
+
+  container.register("strategy.tng", TngStrategy, [
+    context,
+    new Reference("service.file_permission")
+  ]).addTag("strategy")
+
+  container.register("strategy.default", DefaultStrategy, [
+    context,
+    new Reference("service.network"),
+    new Reference("service.file_permission"),
+    new Reference("service.impress_version"),
+    new Reference("builder.apache_container")
+  ]).addTag("strategy")
 
   for (const taggedService of container.findTaggedServiceIds("strategy")) {
     const strategy = container.get(taggedService.id)

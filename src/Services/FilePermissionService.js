@@ -9,7 +9,7 @@ export default class FilePermissionService {
    * @param {string} targetPath
    * @returns {void}
    */
-  static chmodRecursive(targetPath) {
+  chmodRecursive(targetPath) {
     if (!existsSync(targetPath) || process.platform === "win32") {
       return
     }
@@ -19,7 +19,7 @@ export default class FilePermissionService {
       chmodSync(targetPath, 0o777)
       if (stats.isDirectory()) {
         for (const entry of readdirSync(targetPath)) {
-          FilePermissionService.chmodRecursive(path.join(targetPath, entry))
+          this.chmodRecursive(path.join(targetPath, entry))
         }
       }
     } catch {

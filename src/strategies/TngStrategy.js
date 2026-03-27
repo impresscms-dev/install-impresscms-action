@@ -3,9 +3,17 @@ import path from "node:path"
 import process from "node:process"
 import AbstractStrategy from "./AbstractStrategy.js"
 import ResultsDto from "../DTO/ResultsDto.js"
-import FilePermissionService from "../Services/FilePermissionService.js"
 
 export default class TngStrategy extends AbstractStrategy {
+  /**
+   * @param {object} context
+   * @param {import("../Services/FilePermissionService.js").default} filePermissionService
+   */
+  constructor(context, filePermissionService) {
+    super(context)
+    this.filePermissionService = filePermissionService
+  }
+
   /**
    * @param {import("../DTO/InputDto.js").default} inputDto
    * @returns {Promise<boolean>}
@@ -84,7 +92,7 @@ export default class TngStrategy extends AbstractStrategy {
     ]
 
     for (const folderPath of foldersToChmod) {
-      FilePermissionService.chmodRecursive(path.join(projectPath, folderPath))
+      this.filePermissionService.chmodRecursive(path.join(projectPath, folderPath))
     }
   }
 

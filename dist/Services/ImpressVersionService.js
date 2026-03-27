@@ -7,7 +7,7 @@ export default class ImpressVersionService {
    * @param {string} projectPath
    * @returns {string}
    */
-  static detect(projectPath) {
+  detect(projectPath) {
     const legacyVersion = this.#detectFromLegacyVersionFiles(projectPath)
     if (legacyVersion) {
       return legacyVersion
@@ -25,7 +25,7 @@ export default class ImpressVersionService {
    * @param {string} projectPath
    * @returns {string | null}
    */
-  static #detectFromLegacyVersionFiles(projectPath) {
+  #detectFromLegacyVersionFiles(projectPath) {
     const versionFileCandidates = [
       path.join(projectPath, "htdocs", "include", "version.php"),
       path.join(projectPath, "include", "version.php")
@@ -56,7 +56,7 @@ export default class ImpressVersionService {
    * @param {string} projectPath
    * @returns {string | null}
    */
-  static #detectFromComposerFiles(projectPath) {
+  #detectFromComposerFiles(projectPath) {
     const composerJson = this.#readJsonFile(path.join(projectPath, "composer.json"))
     const composerJsonVersion = this.#detectFromComposerJson(composerJson)
     if (composerJsonVersion) {
@@ -76,7 +76,7 @@ export default class ImpressVersionService {
    * @param {Record<string, unknown> | null} composerJson
    * @returns {string | null}
    */
-  static #detectFromComposerJson(composerJson) {
+  #detectFromComposerJson(composerJson) {
     if (!composerJson) {
       return null
     }
@@ -96,7 +96,7 @@ export default class ImpressVersionService {
    * @param {Record<string, unknown> | null} composerLock
    * @returns {string | null}
    */
-  static #detectFromComposerLock(composerLock) {
+  #detectFromComposerLock(composerLock) {
     if (!composerLock) {
       return null
     }
@@ -119,7 +119,7 @@ export default class ImpressVersionService {
    * @param {unknown[]} candidates
    * @returns {string | null}
    */
-  static #detectFromCandidates(candidates) {
+  #detectFromCandidates(candidates) {
     for (const candidate of candidates) {
       const version = this.#extractMajorMinor(candidate)
       if (version) {
@@ -134,7 +134,7 @@ export default class ImpressVersionService {
    * @param {string} filePath
    * @returns {Record<string, unknown> | null}
    */
-  static #readJsonFile(filePath) {
+  #readJsonFile(filePath) {
     if (!existsSync(filePath)) {
       return null
     }
@@ -151,7 +151,7 @@ export default class ImpressVersionService {
    * @param {unknown} value
    * @returns {string | null}
    */
-  static #extractMajorMinor(value) {
+  #extractMajorMinor(value) {
     if (typeof value !== "string") {
       return null
     }

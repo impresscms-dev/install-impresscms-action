@@ -30,8 +30,9 @@ describe("FilePermissionService", () => {
       existsSync: jest.fn().mockReturnValue(false),
       chmodSync: jest.fn()
     })
+    const filePermissionService = new FilePermissionService()
 
-    FilePermissionService.chmodRecursive("any-path")
+    filePermissionService.chmodRecursive("any-path")
 
     expect(existsSync).toHaveBeenCalledWith("any-path")
     expect(chmodSync).not.toHaveBeenCalled()
@@ -46,8 +47,9 @@ describe("FilePermissionService", () => {
       readdirSync: jest.fn().mockReturnValue(["child.txt"]),
       chmodSync: jest.fn()
     })
+    const filePermissionService = new FilePermissionService()
 
-    FilePermissionService.chmodRecursive("/tmp/root")
+    filePermissionService.chmodRecursive("/tmp/root")
 
     expect(chmodSync).toHaveBeenCalledTimes(2)
     expect(chmodSync).toHaveBeenNthCalledWith(1, "/tmp/root", 0o777)
@@ -60,9 +62,10 @@ describe("FilePermissionService", () => {
         throw new Error("broken stat")
       })
     })
+    const filePermissionService = new FilePermissionService()
 
     expect(() => {
-      FilePermissionService.chmodRecursive("/tmp/root")
+      filePermissionService.chmodRecursive("/tmp/root")
     }).not.toThrow()
   })
 })
