@@ -27,6 +27,6 @@
     "@actions/github": "^9.0.0",
     "node-dependency-injection": "^3.2.6",
     "playwright": "^1.59.1",
-    "testcontainers": "^11.13.0"
+    "testcontainers": "^11.14.0"
   }
 }
