@@ -19,7 +19,7 @@
     "@vercel/ncc": "^0.44.1",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.8.0",
-    "jest": "^30.4.2"
+    "jest": "^30.5.0"
   },
   "dependencies": {
     "@actions/artifact": "^6.2.1",
